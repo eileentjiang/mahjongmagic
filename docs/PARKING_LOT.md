@@ -14,7 +14,7 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 
 | Idea | Source | Horizon |
 |---|---|---|
-| Kong / in-hand bonus payments tracked mid-round (if not in the MVP) | Journey: "intermediate wins (kong)", "track in-between payouts" | Next |
+| Dedicated kong scoring flow (MVP handles kongs as one-off adjustments) | Journey: "intermediate wins (kong)", "track in-between payouts" | Next |
 | Multiple saved house-rule profiles ("Mom's table", "Work crew") | Pain point: house rules | Next |
 | Season standings / rankings across nights, even after payout | Pain point: "continued ranking even post payout" | Next |
 | Player stats: win rate, favorite hands, biggest hand of the night | Natural extension of history | Later |
@@ -23,7 +23,6 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 | Payment deep links (prefilled Venmo/PayPal requests; not an integration) | Settlement step | Later |
 | False-win / penalty handling | Edge case | Later |
 | Multiple winners on one discard | Edge case | Later |
-| Player substitution with a split balance | Edge case | Later |
 | Installable PWA with full offline support | Constraint | Next |
 
 ## The Beginner
@@ -32,11 +31,9 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 |---|---|---|
 | Glossary of terms, tappable from any scoring item | "Unfamiliar with the rules & terms" | Next |
 | Visual pattern reference (picture of each scoring hand) | "Can't remember rules & patterns" | Next |
-| Tile cheat sheet: Chinese numerals/characters ↔ numbers in the chosen language | "See the #s in Chinese + desired language" | Next |
 | Multi-language UI | "Language barriers" | Later |
 | Private "quiet help": look something up without asking the table | "Can't ask questions out loud" | Later |
 | Beginner / intermediate / advanced rule toggles (simplified scoring) | "Differentiate rules based on beg/int/adv play" | Later |
-| Seat & wind setup helper (who sits where, which flower is yours) | "Know the seat & table winds & flower" | Next |
 | Full teaching mode / interactive tutorial | Non-goal for MVP | Someday |
 
 ## Community Player
@@ -53,7 +50,7 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 
 | Idea | Source | Horizon |
 |---|---|---|
-| Additional variant presets (Riichi, MCR, Taiwanese 16-tile, American NMJL, Singaporean…) | "Regional styles + house rule combinations" | Later |
+| Additional variant presets beyond the v1 preset(s) (Riichi, MCR, Taiwanese 16-tile, American NMJL, Singaporean…) | "Regional styles + house rule combinations" (picker ships in MVP Feature A) | Next |
 | Custom rule builder (add/edit scoring items and point values) | "House rule combinations" | Later |
 | Alternative payout structures (half/full "spicy", per-point linear, chips) | "Other payout structures" | Later |
 | 3-player and other non-4-player formats | Edge case | Someday |
@@ -62,8 +59,9 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 
 | Idea | Notes | Horizon |
 |---|---|---|
-| Tile-by-tile hand builder with automatic pattern detection | Removes the manual checklist; needs a solid rules engine | Later |
-| Camera tile recognition (photo of the winning hand → score) | High wow-factor, high effort, accuracy risk | Someday |
+| Tile-number cheat sheet for all 144 tiles (MVP covers winds, flowers & hand tiles only) | "See the #s in Chinese + desired language" | Next |
+| Live / continuous camera scanning as tiles are revealed | Extends MVP Feature C | Someday |
+| On-device tile recognition (no server, works offline) | Alternative to MVP's server-based recognition | Later |
 | Voice entry ("East self-drew, 5 fan") | Hands-free at the table | Someday |
 | Dice roller / wall-break helper | Setup stage | Someday |
 
