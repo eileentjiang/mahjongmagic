@@ -196,6 +196,8 @@ Presets marked ★ are **on in the House default default profile**.
 ## 5. User flows & behavior
 
 ### 5.1 Onboarding: open link → choose type of play → players & positions
+- **First visit (no saved sessions or profiles):** Home shows a single illustrated tile (a persimmon on a tilted tile) with one line of copy, plus "Start a new session" and "Join a session". Returning players see their session in progress and saved profiles instead.
+- **Owner's mark:** Eileen's personal seal appears small beside the © line on Home and About, and as a sign-off on the About page.
 1. User opens the link and sees **"Start a new session"**, plus **"Play again with ‹profile›"** for each saved table profile, and **"Continue last session"** if a saved session exists.
    - **Fast path:** tapping a table profile skips straight to a one-screen confirmation (rules summary + players), and one more tap starts the session.
 2. **Choose the type of play:** the variant picker (Feature A), with the last-used variant pre-selected. Default: *Hong Kong style (MCR rules)* with the *House default* house profile.
@@ -262,7 +264,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **Blurry or low-light photo** → the app **rejects it before scoring** and asks for a **retake** ("Too blurry / too dark — try again with more light and a steady hand"), with tips such as moving closer, turning on the flash, or laying the tiles flat. It never scores from a photo that failed the quality check.
 - **Partial photo** (tiles cut off or covered) → retake prompt, naming what looks missing.
 - **Photo passes the quality check but some tiles are uncertain** → those tiles are highlighted for the user to confirm or fix before scoring.
-- **Several failed retakes in a row** (e.g. 3) → the app offers manual tile entry so the hand can still be scored.
+- **Manual entry is always one tap away:** every rejected-photo prompt offers both "Retake photo" and "Enter tiles by hand", from the first failure.
 - **Wrong number of tiles** (not 14 + kong extras + flowers) → the score is blocked until the tile strip is valid, and the message says what's missing or extra.
 - **Not a winning hand** under the chosen variant → the app explains why (e.g. "no pair found") and offers a manual override (Feature E).
 - **Recognition service errors or times out (e.g. 500, no network)** → the app falls back to manual tile entry immediately. It never blocks scoring. A retry button is offered.
