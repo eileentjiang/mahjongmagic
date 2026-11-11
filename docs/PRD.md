@@ -107,7 +107,8 @@ Presets marked ★ are **on in the House default default profile**.
 | ★ **No Self-Drawn fan** | The 1-pt Self-Drawn fan isn't added when the self-draw bonus already applies. |
 | **False-win penalty** | A false mahjong pays a set amount to each player. |
 
-- **Custom house rule** (fallback): a named one-off rule with a point or $ amount, for anything not in the list.
+- **Custom house rule** (fallback), for anything not in the list: **name**, **points** (1–88) and **who pays** (*Everyone*: the points join the hand total and are paid with the normal split; *Discarder only*: only the discarder pays them, and on a self-draw everyone does). Saved rules appear in the House rules list with their own on/off switch.
+- **Rules that are on are the rules that score.** The scoring engine reads the session's current rule set for every game: each preset that's switched on changes the calculation, and one that's off has no effect. A custom rule can't be detected from tiles, so when it's on it shows on the score screen as a one-tap "tap if it applies" option; when it's off it doesn't appear at all. Changing rules mid-session applies from the next game (or the whole session, if chosen), and every game stores the rule set it was scored with.
 - The ★ set is the owner's group's rules. It ships as the default, and the remaining open details are tracked in [`GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md#3-open-questions-settle-during-test-sessions). The list is validated with 2–3 other groups.
 
 **A4. Saved table profiles (least-friction repeat setup)**
@@ -387,7 +388,8 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] With the defaults, recording a melded kong immediately moves −$0.20 from each other player (+$0.60 to the owner), and a concealed or self-drawn kong −$0.40 each (+$1.20). The payment stays after a draw. If the owner then wins, the per-kong fans aren't counted, but Three Kongs / Four Kongs still are.
 - [ ] With the defaults, a hand holding no flowers and scoring nothing else is a Chicken Hand (8 points). The same hand holding any flower is not a Chicken Hand.
 - [ ] Switching to the "Pure MCR" profile, a 10-point discard win pays −$1.80 / −$0.80 / −$0.80 (winner +$3.40), and a hand under 8 points (excluding flowers) is flagged as not a valid win.
-- [ ] Toggling each house-rule preset changes the result of its reference test hand as described in §3 A3.
+- [ ] Toggling each house-rule preset changes the result of its reference test hand as described in §3 A3, and switching it off returns the original result.
+- [ ] A saved custom rule that's on appears on the score screen; adding it adds its points to the total and the payout follows its "who pays" setting. A custom rule that's off never appears and never changes a score.
 - [ ] Conflicting presets can't both be active.
 - [ ] Saving a table profile and choosing "Play again with ‹profile›" starts a session with the same variant, house rules, payout scale and players in **at most 2 taps**.
 - [ ] Editing a profile doesn't change the scores of sessions already played with it.
