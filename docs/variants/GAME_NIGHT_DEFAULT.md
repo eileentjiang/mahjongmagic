@@ -1,6 +1,6 @@
-# Default house profile: "Game Night" (the owner's rules)
+# Default house profile: "House default" (the owner's rules)
 
-**Status:** the app's **default** for v1. The owner will refine it after test nights, so every value here is a **setting**, not a hard-coded rule. Users can change any of it (PRD Feature A3/A4).
+**Status:** the app's **default** for v1. The owner will refine it after test sessions, so every value here is a **setting**, not a hard-coded rule. Users can change any of it (PRD Feature A3/A4).
 
 **How it's built:** the base rulebook is [MCR](./MCR.md) (the 81 fan and their combining rules) plus the house rules below. Anything not listed here follows MCR.
 
@@ -8,7 +8,7 @@
 
 ## 1. House rules
 
-| Rule | Game Night default | MCR, for comparison |
+| Rule | House default default | MCR, for comparison |
 |---|---|---|
 | **Minimum to win** | **More than 0 points**, flowers included: a hand whose only points are flowers can win | 8 points, not counting flowers |
 | **Payout scale** | **$0.10 per point.** Hand value H = points × $0.10 | n/a |
@@ -16,7 +16,7 @@
 | **Win by self-draw** | Everyone's payment doubles: **each of the 3 pays 2 × H** | Each pays points + 8 |
 | **Self-Drawn fan (1 pt)** | **Not counted.** The doubling already rewards the self-draw | Counted |
 | **+8 base** | **Not used** | Used |
-| **Dealer ("the dice")** | **The dealer keeps the deal only if they win.** After any other win **or a draw**, it passes to the next player (the dealer's right, counter-clockwise) | Passes every hand |
+| **Dealer ("the dice")** | **The dealer keeps the deal only if they win.** After any other win **or a draw**, it passes to the next player (the dealer's right, counter-clockwise) | Passes every game |
 | **Flowers** | **1 point** per flower that **matches your seat number**. Others score 0 | 1 pt per flower, any seat |
 | **Full flower set** | A **complete set** (all 4 flowers, or all 4 seasons) scores **+2 points**, on top of the set's own points | No bonus |
 | **Kongs** | **Paid on the spot** when declared, whether or not that player wins the hand (see §1a) | Scored only as fan if the player wins |
@@ -73,4 +73,4 @@ In short: **discard → winner gets 4 × H, self-draw → winner gets 6 × H.** 
 - No dealer bonus · seats stay put between rounds · no false-win penalty · all 8 flowers = +2 +2, nothing extra.
 
 ## 4. Open questions
-None right now. Everything above is decided, and any change after test nights is a settings change, not an engine change.
+None right now. Everything above is decided, and any change after test sessions is a settings change, not an engine change.
