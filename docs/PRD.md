@@ -1,10 +1,11 @@
-# Mahjong Magic: Product Requirements Document (v0.11 draft)
+# Mahjong Magic: Product Requirements Document (v0.12 draft)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
-> - v0.11: Scope trimmed after the flow review. **Editing, deleting or undoing past games, one-off payments, switching seats mid-session, and the win-context ticks (last tile, robbed a kong) move to the parking lot.** Added to the MVP: a quick confirm for a draw, a hand-entry tile picker, mid-session Rules and Players (with "next game on" or "whole session"), an "End session?" confirm, and the "save as a table profile" offer at the end of a session.
+> - v0.12: **Custom rules are written in plain language** and turned into a scoring rule once, at save; from then on the engine applies them automatically whenever they're on. **Mid-session rule and scale changes apply from the next game on only**; recalculating the whole session moves to the parking lot.
+> - v0.11: Scope trimmed after the flow review. **Editing, deleting or undoing past games, one-off payments, switching seats mid-session, and the win-context ticks (last tile, robbed a kong) move to the parking lot.** Added to the MVP: a quick confirm for a draw, a hand-entry tile picker, mid-session Rules and Players (changes apply from the next game on), an "End session?" confirm, and the "save as a table profile" offer at the end of a session.
 > - v0.10: **Shared session is MVP (Feature F).** Everyone can join the same live session from their own phone with a 4-letter code or QR; each phone claims a seat, scoring defaults to "you" as the winner, and every confirmed game updates every phone. A single scorekeeper on one phone stays fully supported, and can invite others at any time without restarting anything. Navigation during a session is a 3-tab bar (Table · Score a win · Standings), where Score opens the camera directly. Needs a small live-sync service, so the "no sync / localStorage only" rule is replaced.
 > - v0.9: Terminology: a **game** is one deal (was "hand"), a **round** is a full lap of the dealer back to the first dealer (the table wind then advances), and a **session** is the whole sitting (was "night"; play doesn't have to be at night). The default house profile is renamed **House default** (was "Game Night"). "Hand" now only means the tiles a player holds.
 > - v0.8: The repo stays **public** (free GitHub Pages). **Player substitution and sit-out rotation move to Phase 2**, out of the MVP.
@@ -107,8 +108,12 @@ Presets marked ★ are **on in the House default default profile**.
 | ★ **No Self-Drawn fan** | The 1-pt Self-Drawn fan isn't added when the self-draw bonus already applies. |
 | **False-win penalty** | A false mahjong pays a set amount to each player. |
 
-- **Custom house rule** (fallback), for anything not in the list: **name**, **points** (1–88) and **who pays** (*Everyone*: the points join the hand total and are paid with the normal split; *Discarder only*: only the discarder pays them, and on a self-draw everyone does). Saved rules appear in the House rules list with their own on/off switch.
-- **Rules that are on are the rules that score.** The scoring engine reads the session's current rule set for every game: each preset that's switched on changes the calculation, and one that's off has no effect. A custom rule can't be detected from tiles, so when it's on it shows on the score screen as a one-tap "tap if it applies" option; when it's off it doesn't appear at all. Changing rules mid-session applies from the next game (or the whole session, if chosen), and every game stores the rule set it was scored with.
+- **Custom house rule**, for anything not in the list, written in **plain language** (e.g. "If the winning hand has a pung or kong of green dragons, add 2 points") plus **who pays** (*Everyone*: the points join the hand total and are paid with the normal split; *Discarder only*: only the discarder pays them, and on a self-draw everyone does). The description has to say exactly when the rule counts, so the app asks for specifics instead of a short name.
+  - **Check how it scores:** when the rule is saved, the app turns the description into a structured rule the scoring engine can test against any hand (tiles and sets, pair, suits, honors, flowers, seat/table wind, self-draw or discard, dealer). It shows that reading back in plain words (*When … · Adds … · Pays …*) for the user to confirm or reword before saving.
+  - The translation happens **once, at save** (through the same AI proxy as photo recognition, so saving needs a connection). Scoring itself never calls the AI: the stored rule is applied by the engine like any built-in pattern, offline, and gives the same result every time.
+  - If the description depends on something the app can't know from the hand and the game details (e.g. "if someone is wearing red"), it says so and the rule can't be saved until it's reworded.
+  - Saved rules appear in the House rules list with their own on/off switch.
+- **Rules that are on are the rules that score.** The scoring engine reads the session's current rule set for every game, with no manual steps: each preset or custom rule that's switched on is checked against every winning hand and applied automatically when it matches (shown in "Why it scores" with a *House rule* label), and one that's off has no effect. Changing rules mid-session applies **from the next game on**, and every game stores the rule set it was scored with.
 - The ★ set is the owner's group's rules. It ships as the default, and the remaining open details are tracked in [`GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md#3-open-questions-settle-during-test-sessions). The list is validated with 2–3 other groups.
 
 **A4. Saved table profiles (least-friction repeat setup)**
@@ -148,7 +153,7 @@ Presets marked ★ are **on in the House default default profile**.
 ### Feature E: Manual adjustments
 **[User changes players, house rules, seating, or the score being entered]** → **[System accepts the change and recalculates everything that depends on it.]**
 - *Editing, deleting or undoing a game that's already confirmed is **not in the MVP** (parking lot). Before Confirm, everything on the score screen can still be changed.*
-- **Change the payout scale or house rules mid-session:** choose whether the change applies **from now on** (default) or **to the whole session**. Every game stores the scale it was scored with, so history is never rewritten by accident.
+- **Change the payout scale or house rules mid-session:** the change applies **from the next game on**. Games already played keep the scale and rules they were scored with. *(Recalculating the whole session with new rules is in the parking lot.)*
 - **Fix names or seat order:** from ⋯ → Players & seats, mid-session. *(Substituting a new player into a seat is **Phase 2**; see the parking lot.)*
 - **Mid-session Rules and Players** are the same screens as setup, without the setup steps; **Save changes** returns to the Table. Phones that joined a shared session see them read-only.
 - **Change seating / dealer:** override the dealer, the table wind, or the seat order if the app's tracking drifts from the real table (⋯ → Players & seats, under "Dealer & table wind").
@@ -245,13 +250,13 @@ Presets marked ★ are **on in the House default default profile**.
 
 ### The user wants to change the payout scale
 - Payout scale can be changed **before starting** (onboarding) or **mid-session** (Feature E).
-- Mid-session, the user picks **"From the next game on"** (default) or **"Recalculate the whole session"**. A preview shows the old vs. new balances before they confirm.
+- Mid-session, a change applies **from the next game on**. Past games keep their scores. (Recalculating the whole session is in the parking lot.)
 - Each game stores the scale it was scored with, so the history stays accurate.
 - Invalid values (0, negative, non-numeric) are blocked with an inline message. Very large values ask for confirmation.
 
 ### House rules and table profiles
 - **Conflicting presets** (e.g. *No +8 base* and *Discarder pays for everyone*, or a cap below the minimum): the app explains the conflict and blocks the combination, or asks the user to choose one.
-- **Changing house rules mid-session:** same behavior as the payout scale. Default is "from the next game on", with an option to recalculate the whole session (with a preview).
+- **Changing house rules mid-session:** same as the payout scale: from the next game on.
 - **Editing a table profile** never changes past sessions. It only applies to the next session started from it.
 - **Profile players who aren't here this session:** the profile pre-fills its usual players, and the user can swap anyone before starting.
 - **Deleting a profile** asks for confirmation. Past sessions played with it stay intact (each session stores its own copy of the rules).
@@ -389,7 +394,8 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] With the defaults, a hand holding no flowers and scoring nothing else is a Chicken Hand (8 points). The same hand holding any flower is not a Chicken Hand.
 - [ ] Switching to the "Pure MCR" profile, a 10-point discard win pays −$1.80 / −$0.80 / −$0.80 (winner +$3.40), and a hand under 8 points (excluding flowers) is flagged as not a valid win.
 - [ ] Toggling each house-rule preset changes the result of its reference test hand as described in §3 A3, and switching it off returns the original result.
-- [ ] A saved custom rule that's on appears on the score screen; adding it adds its points to the total and the payout follows its "who pays" setting. A custom rule that's off never appears and never changes a score.
+- [ ] A custom rule written in plain language is read back as When / Adds / Pays before saving. Once saved and switched on, it's applied automatically to every winning hand it matches (no manual step), and the payout follows its "who pays" setting. Switched off, it never changes a score.
+- [ ] A custom rule that depends on something the app can't know is flagged and can't be saved as written.
 - [ ] Conflicting presets can't both be active.
 - [ ] Saving a table profile and choosing "Play again with ‹profile›" starts a session with the same variant, house rules, payout scale and players in **at most 2 taps**.
 - [ ] Editing a profile doesn't change the scores of sessions already played with it.
@@ -420,7 +426,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] Seat wind, round wind, and own-flower points in Feature C come from the current seat state, with no manual input.
 
 **E. Manual adjustments**
-- [ ] Changing the payout scale "from the next game" leaves past games unchanged. "Recalculate the whole session" updates all of them, and a preview is shown first.
+- [ ] Changing the payout scale or a house rule mid-session changes only games scored afterwards; past games are unchanged.
 - [ ] Manually overriding the dealer, table wind, or seat order updates the table view immediately.
 
 ---
