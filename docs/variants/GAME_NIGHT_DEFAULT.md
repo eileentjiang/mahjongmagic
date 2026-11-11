@@ -20,6 +20,11 @@
 | **Flowers** | **1 point** per flower that **matches your seat number**. Others score 0 | 1 pt per flower, any seat |
 | **Full flower set** | A **complete set** (all 4 flowers, or all 4 seasons) scores **+2 points**, on top of the set's own points | No bonus |
 | **Kongs** | **Paid on the spot** when declared, whether or not that player wins the hand (see §1a) | Scored only as fan if the player wins |
+| **Chicken Hand** | **8 points** (MCR value) when the hand holds **no flowers at all** (not even ones for other seats) **and** would otherwise score 0 | 8 points when the hand would otherwise score 0, flowers excluded |
+| **Dealer bonus** | None | None |
+| **Seats between rounds** | Players **stay in their chairs**. Only the dice and seat winds move | Players physically swap seats (App. 4) |
+| **False win penalty** | None (available as a preset) | 10–20 points to each player |
+| **Both full flower sets (all 8)** | +2 per set (+4 total), nothing extra | n/a |
 | **Point cap** | None | None |
 
 ### 1a. Kong payments (paid on the spot)
@@ -32,7 +37,10 @@
 - The money is the player's **even if they don't win the hand**, and even if the hand ends in a draw.
 - **No double counting:** if the kong owner goes on to win, their kongs are **not counted again** in the hand's points. The engine leaves out the MCR kong fans (Melded Kong, Concealed Kong, Two Melded Kongs, Two Concealed Kongs).
 - **Robbing the kong:** if another player wins by robbing an added kong, the kong was never completed, so no kong payment is made.
-- At $0.10/point (assuming all three others pay; see open question 1): melded kong → each pays $0.20, owner **+$0.60**. Concealed or self-drawn kong → each pays $0.40, owner **+$1.20**.
+- **All three other players pay equally**, for every kong type (including a melded kong claimed from a discard).
+- **Kong patterns still score:** if the owner wins with **Three Kongs (32)** or **Four Kongs (88)**, those patterns count. Only the per-kong fans are dropped, so nothing is paid twice.
+- Kong payments are a flat 2 or 4 points; nothing doubles them (not the dealer, not a self-draw).
+- At $0.10/point: melded kong → each pays $0.20, owner **+$0.60**. Concealed or self-drawn kong → each pays $0.40, owner **+$1.20**.
 
 ### Seat numbers and flowers
 | Seat | # | Matching flower tiles |
@@ -59,14 +67,9 @@ In short: **discard → winner gets 4 × H, self-draw → winner gets 6 × H.** 
 - A hand with only flower points **can win** (minimum is more than 0).
 - **Draw game:** the dealer passes. The dice move on.
 - The **Self-Drawn** fan is **not counted** (the self-draw doubling already covers it).
-- **Kongs are paid on the spot:** melded kong 2 points, concealed or self-drawn kong 4 points. They aren't counted again if the owner wins.
+- **Kongs are paid on the spot:** melded kong 2 points, concealed or self-drawn kong 4 points, **paid equally by all three other players**. They aren't counted again if the owner wins, but Three Kongs and Four Kongs still score as patterns.
+- **Chicken Hand** (8 points) only applies with **no flowers at all** and nothing else scoring.
+- No dealer bonus · seats stay put between rounds · no false-win penalty · all 8 flowers = +2 +2, nothing extra.
 
-## 4. Open questions (settle during test nights)
-1. **Who pays a kong?** All three other players equally (assumed), or only the discarder for a melded kong claimed from a discard?
-2. **Big kong patterns:** if the owner wins with **Three Kongs (32)** or **Four Kongs (88)**, do those still score as hand patterns? *(Assumed: yes. Only the per-kong fans are dropped, since they're a hand shape, not a per-kong payment.)*
-3. **Holding both full flower sets (all 8 flowers):** worth more than +2 +2? *(Assumed: no extra.)*
-4. **Chicken Hand:** MCR gives 8 points to a hand that would otherwise score 0 (not counting flowers). With a "> 0" minimum, keep it, drop it, or count it as 1 point? *(Assumed: dropped. A hand needs at least 1 point from fan or flowers.)*
-5. **Does the dealer earn or pay extra** (common in HK play)? *(Assumed: no.)*
-6. **Seat changes between rounds:** do players physically swap seats (MCR App. 4), or stay put while the dice move? *(Assumed: stay put.)*
-7. **False win penalty:** used casually? *(Assumed: off. Available as a preset.)*
-8. **Is a kong payment doubled or changed by anything** (e.g. the dealer's kong)? *(Assumed: no, it's a flat 2 or 4 points.)*
+## 4. Open questions
+None right now. Everything above is decided, and any change after test nights is a settings change, not an engine change.

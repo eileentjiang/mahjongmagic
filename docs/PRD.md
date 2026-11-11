@@ -1,9 +1,10 @@
-# Mahjong Magic: Product Requirements Document (v0.5 draft)
+# Mahjong Magic: Product Requirements Document (v0.6 draft)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.6: All Game Night rules settled. All three players pay each kong equally; Three/Four Kongs still score; Chicken Hand needs no flowers at all; no dealer bonus; seats stay put; no false-win penalty.
 > - v0.5: Game Night details settled: seat flower = 1 pt, full set = +2, flower-only hands can win, the dealer passes on a draw, and the Self-Drawn fan isn't counted. **Kongs are paid on the spot** (melded 2 pts, concealed/self-drawn 4 pts) and aren't counted again if the owner wins. Recording a kong is now a quick action during play.
 > - v0.4: The default scoring is now the owner's **"Game Night" house profile** on top of MCR: a minimum above 0 points, discarder pays 2× and the others 1×, self-draw doubles everyone's payment, the dealer keeps the deal on a win, only seat-matching flowers score, and a full flower set earns a bonus. The MCR reference now covers the whole rulebook (exclusions, fouls, rankings).
 > - v0.3: The default variant is now **"Hong Kong style (MCR rules)"**, based on the WMO *Mahjong Competition Rules* (2014). The default payout scale is **$0.10 per point**, editable. Added **house-rule presets** and **saved table profiles** to Feature A, so a group's usual rules take one tap.
@@ -266,7 +267,10 @@ The v1 variant is **WMO Mahjong Competition Rules (2014)**, labelled "Hong Kong 
 | Flowers | **1 pt** per seat-matching flower; full set **+2** | 1 pt each, any seat | *Own-seat flowers only*, *Full flower set bonus* |
 | Kongs | Paid on the spot: melded **2**, concealed/self-drawn **4**; not re-counted on a win | Counted as fan only if the owner wins | *Kong paid on the spot* |
 
-**[OPEN]** Remaining details (who pays a kong, Three/Four Kongs patterns, Chicken Hand, dealer bonus, seat swaps) are in [`GAME_NIGHT_DEFAULT.md` §4](./variants/GAME_NIGHT_DEFAULT.md#4-open-questions-settle-during-test-nights) and get settled during test nights.
+| Chicken Hand | 8 pts, only with **no flowers at all** and nothing else scoring | 8 pts if nothing else scores (flowers excluded) | n/a |
+| Seats / dealer bonus / false win | Seats stay put; no dealer bonus; no penalty | Seats swap each round; penalties apply | *False-win penalty* |
+
+All Game Night rules are decided ([`GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md)). Changes after test nights are settings, not code.
 
 Variants and house rules are a **rules config (data)** plus test hands, never hard-coded. House-rule presets are config modifiers applied on top of a variant.
 
@@ -313,7 +317,8 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] With the defaults, a dealer win keeps the same dealer, and a non-dealer win moves the deal to the next player and updates every flower #.
 - [ ] With the defaults, each seat-matching flower scores 1 point, other flowers score 0, a full set adds +2, and a hand with only flower points is a valid win.
 - [ ] With the defaults, a self-draw doesn't add the Self-Drawn fan, and a draw passes the deal.
-- [ ] With the defaults, recording a melded kong immediately moves −$0.20 from each other player (+$0.60 to the owner), and a concealed or self-drawn kong −$0.40 each (+$1.20). The payment stays after a draw, and the per-kong fans aren't counted if the owner then wins.
+- [ ] With the defaults, recording a melded kong immediately moves −$0.20 from each other player (+$0.60 to the owner), and a concealed or self-drawn kong −$0.40 each (+$1.20). The payment stays after a draw. If the owner then wins, the per-kong fans aren't counted, but Three Kongs / Four Kongs still are.
+- [ ] With the defaults, a hand holding no flowers and scoring nothing else is a Chicken Hand (8 points). The same hand holding any flower is not a Chicken Hand.
 - [ ] Switching to the "Pure MCR" profile, a 10-point discard win pays −$1.80 / −$0.80 / −$0.80 (winner +$3.40), and a hand under 8 points (excluding flowers) is flagged as not a valid win.
 - [ ] Toggling each house-rule preset changes the result of its reference test hand as described in §3 A3.
 - [ ] Conflicting presets can't both be active.

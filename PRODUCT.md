@@ -59,7 +59,7 @@ Hard constraints:
 - Every confirmed action persists immediately; with storage blocked, the app still works and says the night won't be saved.
 - Domain vocabulary, used the same in code and UI: night → wind round → hand; seat wind; table (prevailing) wind; dealer; flower number; self-draw; discard; payout scale.
 
-Open decisions (from the PRD): the remaining Game Night details (flower values, full-set bonus, draw-game dealer, Chicken Hand); the recognition approach and accuracy target; how a substitute's balance carries; multiple winners on one discard (proposed: one winner per hand); hosting.
+Open decisions (from the PRD): the recognition approach and accuracy target; how a substitute's balance carries; multiple winners on one discard (proposed: one winner per hand); hosting.
 
 ## Brand Commitments
 
