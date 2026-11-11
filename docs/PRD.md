@@ -203,7 +203,7 @@ Presets marked ★ are **on in the House default default profile**.
    - **Fast path:** tapping a table profile skips straight to a one-screen confirmation (rules summary + players), and one more tap starts the session.
 2. **Choose the type of play:** the variant picker (Feature A), with the last-used variant pre-selected. Default: *Hong Kong style (MCR rules)* with the *House default* house profile.
 3. **House rules & payout:** toggle the house-rule presets (each with a one-line explanation), add a custom rule if needed, and confirm the payout scale (default $0.10/point). A summary line shows what's in play, e.g. "House default · MCR fan · min > 0 · discarder ×2 · self-draw ×2 · dealer stays · $0.10/pt".
-4. **Who's at the table and where:** enter 4 names and place them in seats (East/South/West/North). East is the first dealer. Seats can be dragged to match the real table, or randomized ("roll for seats").
+4. **Who's at the table and where:** name the table (e.g. "Thursday crew"; optional, defaults to the date, and becomes the profile name if saved), enter 4 names and place them in seats (East/South/West/North). East is the first dealer. Seats can be dragged to match the real table, or randomized ("roll for seats").
 5. The table view appears: each player's seat wind, flower #, $0.00 balance, the dealer badge, and the table wind.
 6. At the end of a first session (or whenever the user chooses), the app offers to **save the setup as a table profile**.
 
@@ -350,7 +350,8 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 
 ### Conventions
 - Intuitive, descriptive file names (`ScoreHandScreen.tsx`, `calculatePayout.ts`, `detectPatterns.ts`, `variants/hongKong.ts`).
-- Domain vocabulary is used consistently in code and UI: *session/session → wind round → hand*, *seat wind*, *table (prevailing) wind*, *dealer*, *flower number*, *self-draw*, *discard*, *payout scale*.
+- Domain vocabulary is used consistently in code and UI: *session → wind round → game*, *seat wind*, *table (prevailing) wind*, *dealer*, *flower number*, *self-draw*, *discard*, *payout scale*.
+- **Back always returns to the screen you came from** (browser history), never a fixed screen. The ← on a screen reached from several places (e.g. About from Home, the menu or End of session) goes back to whichever one you used. Bottom sheets close with X, Cancel or a tap outside.
 - Every scoring pattern is data plus at least one test hand that's known to be valid and one that's known to be invalid.
 
 ---
