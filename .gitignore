@@ -1,0 +1,5 @@
+# Impeccable scratch output (specs, comps, review captures)
+.impeccable/build/
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/config.local.json
