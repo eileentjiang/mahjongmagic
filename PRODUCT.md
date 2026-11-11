@@ -45,7 +45,7 @@ The AI only reads tiles. A deterministic, tested rules engine does all scoring, 
 
 MVP features (detail in `docs/PRD.md` §3):
 
-- **A. Variant.** v1 scores **Hong Kong / Cantonese** only. Other variants appear in the picker as "coming soon". Each variant is a rules config (data), never hard-coded. The last-used variant and payout scale are pre-selected.
+- **A. Variant, house rules & profiles.** v1 scores **"Hong Kong style (MCR rules)"**, based on the WMO Mahjong Competition Rules 2014 (see `docs/variants/MCR.md`). Other variants appear in the picker as "coming soon". The payout scale defaults to **$0.10 per point** and is editable. Popular **house-rule presets** are toggles, and a **saved table profile** (variant + house rules + payout + players) starts a night in at most 2 taps. Each variant is a rules config (data), never hard-coded.
 - **B. Cumulative standings.** Per-hand +/−$, running balance and rank; roll-ups per wind round and per night; at most 3 settlement transfers; finish, or save and continue later.
 - **C. Photo scoring.** A still photo becomes an editable tile strip, then points, per-pattern reasons and a payout preview. Manual tile entry is always available, and scoring never depends on the camera or network.
 - **D. Seat and table.** Each player's seat wind, flower number, the dealer and the table wind, shown in Chinese and English with a tile picture. Rotation is automatic. A large "My seat" card for each player.
@@ -59,7 +59,7 @@ Hard constraints:
 - Every confirmed action persists immediately; with storage blocked, the app still works and says the night won't be saved.
 - Domain vocabulary, used the same in code and UI: night → wind round → hand; seat wind; table (prevailing) wind; dealer; flower number; self-draw; discard; payout scale.
 
-Open decisions (from the PRD): the Hong Kong rules config (pattern values, points-to-$ table, discard split, dealer rules, minimum and cap, flower scoring); the recognition approach and accuracy target; how a substitute's balance carries; multiple winners on one discard (proposed: one winner per hand); hosting.
+Open decisions (from the PRD): which house-rule presets the owner's group plays, and whether they use MCR's +8 base payment; the recognition approach and accuracy target; how a substitute's balance carries; multiple winners on one discard (proposed: one winner per hand); hosting.
 
 ## Brand Commitments
 
