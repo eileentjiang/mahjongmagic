@@ -1,9 +1,10 @@
-# Mahjong Magic: Product Requirements Document (v0.4 draft)
+# Mahjong Magic: Product Requirements Document (v0.5 draft)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.5: Game Night details settled: seat flower = 1 pt, full set = +2, flower-only hands can win, the dealer passes on a draw, and the Self-Drawn fan isn't counted. **Kongs are paid on the spot** (melded 2 pts, concealed/self-drawn 4 pts) and aren't counted again if the owner wins. Recording a kong is now a quick action during play.
 > - v0.4: The default scoring is now the owner's **"Game Night" house profile** on top of MCR: a minimum above 0 points, discarder pays 2× and the others 1×, self-draw doubles everyone's payment, the dealer keeps the deal on a win, only seat-matching flowers score, and a full flower set earns a bonus. The MCR reference now covers the whole rulebook (exclusions, fouls, rankings).
 > - v0.3: The default variant is now **"Hong Kong style (MCR rules)"**, based on the WMO *Mahjong Competition Rules* (2014). The default payout scale is **$0.10 per point**, editable. Added **house-rule presets** and **saved table profiles** to Feature A, so a group's usual rules take one tap.
 > - v0.2: MVP features rewritten around the owner's feature list (variant choice, cumulative rankings, photo scoring, seat/table info, manual adjustments). User flows, edge cases and DoD updated to match. Photo scoring and variant choice moved out of non-goals.
@@ -84,7 +85,8 @@ Presets marked ★ are **on in the Game Night default profile**.
 | **Discarder pays for everyone** | On a discard, the discarder covers the other two players' share too. |
 | ★ **Self-draw bonus** | Self-draw pays × N (default **double**). |
 | **Point cap** | Clamp a hand at N points (MCR has no cap). |
-| **Kong paid on the spot** | A kong triggers an immediate small payment from the others (amount set by the group). |
+| ★ **Kong paid on the spot** | Declaring a kong triggers an immediate payment from the others: **melded kong 2 pts, concealed or self-drawn kong 4 pts** (amounts editable). The money is the owner's even if they don't win, and kongs aren't counted again in a winning hand. |
+| ★ **No Self-Drawn fan** | The 1-pt Self-Drawn fan isn't added when the self-draw bonus already applies. |
 | **False-win penalty** | A false mahjong pays a set amount to each player. |
 
 - **Custom house rule** (fallback): a named one-off rule with a point or $ amount, for anything not in the list.
@@ -167,7 +169,8 @@ Presets marked ★ are **on in the Game Night default profile**.
 - The table view is always one tap away and shows each player's **seat wind, flower #, and the table wind** (Feature D), in Chinese and English with tile pictures.
 - Tapping a name opens that player's **"My seat"** card (big text, readable across the table).
 - Players can see the **current standings** at any time without leaving the table view.
-- Optional quick entries during a hand: **"Bonus payment"** for kongs or side payments (Feature E).
+- **"Record kong"** quick action during a hand: choose who declared it and the type (melded / concealed / self-drawn). The app pays it immediately from the other players (Game Night: 2 or 4 points × scale), and the standings update. Kongs can be undone or edited like any hand entry.
+- **"Bonus payment"** for other one-off or side payments (Feature E).
 
 ### 5.3 Scoring: calculate, track, and show to everyone
 1. When someone wins, any player taps **"Score a win"**.
@@ -229,6 +232,11 @@ Presets marked ★ are **on in the Game Night default profile**.
 - **Below minimum points to win:** show a warning and block confirm unless the user overrides it.
 - **Above the point cap:** clamp to the cap and show "capped at N".
 - **Winner = discarder:** not allowed in the picker.
+- **Kongs** (Game Night):
+  - A kong recorded during a hand stays paid even if that hand ends in a draw or someone else wins.
+  - If the kong owner wins, the photo/tile scorer leaves out the per-kong fans so the kong isn't paid twice.
+  - If the winner **robs an added kong**, the app offers to reverse that kong's payment (the kong was never completed).
+  - Deleting or undoing a hand also asks whether to remove the kongs recorded during it.
 - **Multiple winners off the same discard:** **[OPEN]** proposed MVP: one winner per hand; record the second win as a separate hand.
 - Balances **always sum to $0**. Store money as integer cents, display 2 decimals, and never let rounding drift break the $0 sum.
 - Long nights (50+ hands) stay fast and readable. History scrolls, newest first.
@@ -252,11 +260,13 @@ The v1 variant is **WMO Mahjong Competition Rules (2014)**, labelled "Hong Kong 
 | Points → $ | **$0.10 per point** | n/a | Payout scale |
 | Discard win | Discarder pays **2H**; others pay **H** | Discarder pays points + 8; others pay 8 | *Discarder pays double*, *Discarder pays for everyone*, *No +8 base* |
 | Self-draw | Each of the 3 pays **2H** | Each pays points + 8 | *Self-draw bonus*, *No +8 base* |
-| Dealer | Keeps the deal on a win; otherwise it passes | Passes every hand | *Dealer stays on a win / on a draw* |
-| Minimum / cap | **More than 0** / none | 8 (flowers excluded) / none | *Lower minimum*, *Point cap* |
-| Flowers | Only seat-matching flowers score; full set bonus | 1 pt each, any seat | *Own-seat flowers only*, *Full flower set bonus* |
+| Self-Drawn fan | Not counted | 1 pt | *No Self-Drawn fan* |
+| Dealer | Keeps the deal only on a win; passes after other wins and draws | Passes every hand | *Dealer stays on a win / on a draw* |
+| Minimum / cap | **More than 0** (flower-only hands can win) / none | 8 (flowers excluded) / none | *Lower minimum*, *Point cap* |
+| Flowers | **1 pt** per seat-matching flower; full set **+2** | 1 pt each, any seat | *Own-seat flowers only*, *Full flower set bonus* |
+| Kongs | Paid on the spot: melded **2**, concealed/self-drawn **4**; not re-counted on a win | Counted as fan only if the owner wins | *Kong paid on the spot* |
 
-**[OPEN]** Remaining details (flower values, full-set bonus, draw-game dealer, Chicken Hand, Self-Drawn fan under doubling) are listed in [`GAME_NIGHT_DEFAULT.md` §3](./variants/GAME_NIGHT_DEFAULT.md#3-open-questions-settle-during-test-nights) and get settled during test nights.
+**[OPEN]** Remaining details (who pays a kong, Three/Four Kongs patterns, Chicken Hand, dealer bonus, seat swaps) are in [`GAME_NIGHT_DEFAULT.md` §4](./variants/GAME_NIGHT_DEFAULT.md#4-open-questions-settle-during-test-nights) and get settled during test nights.
 
 Variants and house rules are a **rules config (data)** plus test hands, never hard-coded. House-rule presets are config modifiers applied on top of a variant.
 
@@ -301,7 +311,9 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] User can choose a variant before starting, and the night's scoring uses that variant's rules. The default is "Hong Kong style (MCR rules)" with the Game Night profile.
 - [ ] With the defaults (Game Night, $0.10/pt), a 6-point discard win pays −$1.20 (discarder) / −$0.60 / −$0.60 and the winner +$2.40. A 6-point self-draw pays −$1.20 × 3 and the winner +$3.60.
 - [ ] With the defaults, a dealer win keeps the same dealer, and a non-dealer win moves the deal to the next player and updates every flower #.
-- [ ] With the defaults, a flower scores only for the player whose seat # it matches, and a full set adds the configured bonus.
+- [ ] With the defaults, each seat-matching flower scores 1 point, other flowers score 0, a full set adds +2, and a hand with only flower points is a valid win.
+- [ ] With the defaults, a self-draw doesn't add the Self-Drawn fan, and a draw passes the deal.
+- [ ] With the defaults, recording a melded kong immediately moves −$0.20 from each other player (+$0.60 to the owner), and a concealed or self-drawn kong −$0.40 each (+$1.20). The payment stays after a draw, and the per-kong fans aren't counted if the owner then wins.
 - [ ] Switching to the "Pure MCR" profile, a 10-point discard win pays −$1.80 / −$0.80 / −$0.80 (winner +$3.40), and a hand under 8 points (excluding flowers) is flagged as not a valid win.
 - [ ] Toggling each house-rule preset changes the result of its reference test hand as described in §3 A3.
 - [ ] Conflicting presets can't both be active.

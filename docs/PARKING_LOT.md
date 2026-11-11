@@ -14,7 +14,6 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 
 | Idea | Source | Horizon |
 |---|---|---|
-| Dedicated kong scoring flow (MVP handles kongs as one-off adjustments) | Journey: "intermediate wins (kong)", "track in-between payouts" | Next |
 | Share a table profile with friends (link/QR) so everyone uses the same house rules | Extends MVP table profiles (Feature A4) | Next |
 | MCR-style session ranking points (4/2/1/0 per game) alongside $ standings | MCR rulebook §3.9.2 | Later |
 | Season standings / rankings across nights, even after payout | Pain point: "continued ranking even post payout" | Next |
