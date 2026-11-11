@@ -261,7 +261,7 @@ function standardFans(sets: Meld[], pair: TileId, ctx: HandContext, all: TileId[
     const counted = new Map<number, number[]>();
     cs.forEach((x) => counted.set(rank(x.m.tile), [...(counted.get(rank(x.m.tile)) ?? []), x.i]));
     const triple = [...counted.entries()].find(([, v]) => v.length >= 3);
-    if (triple) { out.push({ id: 'pureTripleChow', why: `Three identical ${rank(triple[0])}-${triple[0] + 1}-${triple[0] + 2} ${SUIT_WORD[s]} chows.` }); mark(triple[1].slice(0, 3)); continue; }
+    if (triple) { out.push({ id: 'pureTripleChow', why: `Three identical ${triple[0]}-${triple[0] + 1}-${triple[0] + 2} ${SUIT_WORD[s]} chows.` }); mark(triple[1].slice(0, 3)); continue; }
     if (counted.has(1) && counted.has(4) && counted.has(7)) {
       out.push({ id: 'pureStraight', why: `1 through 9 in ${SUIT_WORD[s]}.` });
       mark([counted.get(1)![0], counted.get(4)![0], counted.get(7)![0]]); continue;
