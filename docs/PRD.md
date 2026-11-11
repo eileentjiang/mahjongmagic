@@ -133,7 +133,7 @@ Presets marked ★ are **on in the House default default profile**.
 3. The user confirms: **who won** and **self-draw or discard (from whom)**. Seat and round wind are filled in from Feature D. *(Ticks for context a photo can't show, e.g. won on the last tile or robbed a kong, are in the parking lot; until then those patterns can be added by hand with "Add a scoring pattern".)*
 4. The system shows the **total points**, a **line-by-line breakdown of each scoring pattern** with a plain-language reason, and **what each player pays or receives**.
 5. **Confirm** sends the game to the ledger (Feature B). **Cancel** changes nothing.
-- **Fallback:** if the photo fails or the user has no camera, they **build the hand by tapping tiles** on a hand-entry screen: the hand so far on top (tap a tile to remove it, with a "9 of 14 tiles" count), and tiles to add below, grouped as Dots, Bamboo, Characters, Honours and Flowers. Scoring unlocks at 14 tiles (plus kong tiles and flowers). Scoring never depends on the camera working.
+- **Fallback:** if the photo fails or the user has no camera, they **build the hand by tapping tiles** on a hand-entry screen: the hand so far on top (tap a tile to remove it, with a "9 of 14 tiles" count), and tiles to add below, grouped as Dots, Bamboo, Characters, Honors and Flowers. The target is **14 tiles by default, plus one for each kong** (four of the same tile, so 15 with one kong, up to 18); flowers don't count. Scoring unlocks when the count matches, and adding a tile is never blocked, so a kong hand is never stuck at 14. Scoring never depends on the camera working.
 - **[OPEN]** Recognition approach (see §7). It almost certainly needs a vision model behind a small server function, which changes the "no backend" assumption.
 
 ### Feature D: Seat and table assignments
@@ -150,7 +150,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **Change the payout scale or house rules mid-session:** choose whether the change applies **from now on** (default) or **to the whole session**. Every game stores the scale it was scored with, so history is never rewritten by accident.
 - **Fix names or seat order:** from ⋯ → Players & seats, mid-session. *(Substituting a new player into a seat is **Phase 2**; see the parking lot.)*
 - **Mid-session Rules and Players** are the same screens as setup, without the setup steps; **Save changes** returns to the Table. Phones that joined a shared session see them read-only.
-- **Change seating / dealer:** override the dealer, the table wind, or the seat order if the app's tracking drifts from the real table.
+- **Change seating / dealer:** override the dealer, the table wind, or the seat order if the app's tracking drifts from the real table (⋯ → Players & seats, under "Dealer & table wind").
 - **Override a score:** accept a hand below the minimum, or adjust the points for a house rule the variant doesn't cover, with a visible "manually adjusted" tag.
 
 ### Feature F: Shared session (everyone's phone) or a single scorekeeper
