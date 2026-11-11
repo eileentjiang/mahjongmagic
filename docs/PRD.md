@@ -4,6 +4,7 @@
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.7.1: Hosting on **GitHub Pages**, with the photo-recognition call going through a tiny separate proxy (Pages can't keep an API key secret). Accuracy target raised to **100%**, with the recognized tiles always shown for a quick confirm or fix.
 > - v0.7: Photo recognition must identify every tile's suit and number/symbol, and **blurry or low-light photos are rejected with a retake prompt** before scoring. When two players call the same discard, **the first to call wins**. Hosting: **a shareable web link**. Substitute balances remain TBD.
 > - v0.6: All Game Night rules settled. All three players pay each kong equally; Three/Four Kongs still score; Chicken Hand needs no flowers at all; no dealer bonus; seats stay put; no false-win penalty.
 > - v0.5: Game Night details settled: seat flower = 1 pt, full set = +2, flower-only hands can win, the dealer passes on a draw, and the Self-Drawn fan isn't counted. **Kongs are paid on the spot** (melded 2 pts, concealed/self-drawn 4 pts) and aren't counted again if the owner wins. Recording a kong is now a quick action during play.
@@ -281,19 +282,23 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 ### Photo recognition (decided: what it must do)
 - **Job:** from one photo of the revealed winning hand, identify **every tile's suit and number, or its symbol** (wind, dragon, flower/season), plus which tiles are melded vs. concealed where the layout shows it. That tile list feeds the scoring engine.
 - **Quality gate first:** before identifying tiles, check for blur, low light and cut-off tiles. If the photo fails, **ask for a retake** rather than guessing.
-- **Accuracy target (proposed, confirm in specs):** ≥ 98% of tiles identified correctly on photos that pass the quality gate, and ≥ 90% of hands needing zero corrections.
+- **Accuracy target: 100%** of tiles identified correctly on photos that pass the quality gate.
+- **Safety net:** after every photo, the app briefly **shows the tiles it picked up** ("Here's what I see") with one tap to confirm, or tap a tile to fix it. A misread tile changes the points and the money, so the confirm step is always shown, but it's built to take about a second when everything is right.
 - **How (implementation, decided in the spec phase):**
-- **Option 1 (proposed):** send the photo to a **vision-capable AI model** through a small serverless function, so the API key never sits in the browser. It returns a tile list. **The app's own rules engine does the scoring**, not the AI, so points are deterministic and testable.
+- **Option 1 (proposed):** send the photo to a **vision-capable AI model** through a **tiny proxy** (e.g. a free Cloudflare Worker), so the API key never sits in the browser or the public GitHub repo. It returns a tile list. **The app's own rules engine does the scoring**, not the AI, so points are deterministic and testable.
 - **Option 2:** an on-device tile-recognition model. No server and no per-photo cost, but much more work up front and less accurate.
 - Either way, the user always reviews the tiles before scoring, and manual entry is always available.
 - Cost, privacy (no photos stored), and offline behavior (falls back to manual entry) have to be stated in the spec.
 
 ### Tech stack (proposed, confirm in the spec phase)
 - A web app: **Vite + React + TypeScript**, **Tailwind CSS**, **Lucide** icons.
-- **One small serverless function** for photo recognition (Vercel / Netlify functions). No database.
+- **One tiny proxy** for photo recognition (e.g. a Cloudflare Worker, free tier) that holds the AI API key and forwards the photo. Everything else is static. No database.
 - Persistence goes through a single storage module that wraps `localStorage`.
 - **Scoring, pattern detection, payout, and seat-rotation logic live in pure functions** (`src/engine/`), separate from the UI, with unit tests (Vitest) for every pattern and payout rule.
-- **Hosting (decided): a shareable web link.** Players open a URL on their phones; no app-store install. Vercel or Netlify (free tier) can serve the site and the photo function together. *Nothing is built or deployed yet.*
+- **Hosting (decided): GitHub Pages**, a shareable web link (e.g. `<username>.github.io/mahjongmagic`). Players open it on their phones; no app-store install. It deploys automatically from the repo.
+  - GitHub Pages only serves static files and can't hide a secret, so the photo-recognition API key lives in the separate proxy above.
+  - GitHub Pages on a **private** repo needs a paid GitHub plan; a public repo is free. **[OPEN]** Keep the repo public, or upgrade?
+  - *Nothing is built or deployed yet.*
 
 ### Design direction **[TBD]**
 - Mobile-first, calm, high-contrast, and readable at arm's length on a table.
@@ -344,7 +349,8 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 **C. Photo scoring**
 - [ ] Taking or uploading a photo shows a tile strip the user can edit.
 - [ ] For at least 10 reference hands entered as tiles (drawn from the MCR rulebook's Appendix 1 examples, whose combinations and exclusions are recorded in `variants/MCR.md` §5, plus hands from the owner's group), the system shows the correct total points and the correct named fan with reasons, applying the non-repeat and other combining rules.
-- [ ] For the reference photo set, at least 98% of tiles are identified correctly (suit + number/symbol), and at least 90% of hands need no correction.
+- [ ] For the reference photo set, 100% of tiles are identified correctly (suit + number/symbol).
+- [ ] After every photo, the recognized tiles are shown for confirmation, and tapping a tile lets the user change it before scoring.
 - [ ] A deliberately blurry photo and a deliberately dark photo are both rejected with a retake prompt, and no score is shown.
 - [ ] If recognition fails or times out, the manual tile entry opens and scoring can still be completed.
 - [ ] Cancel leaves balances and history unchanged.
@@ -367,7 +373,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 
 ## 9. Success metrics (for iteration)
 - Time from "Score a win" to "Confirm" is **under 30 seconds** for a typical hand (photo path).
-- **At least 90% of photos** need zero tile corrections, and fewer than 1 in 5 photos needs a retake.
+- **Every photo** reads all tiles correctly (100% target); any correction needed during test nights gets logged and fixed. Fewer than 1 in 5 photos needs a retake.
 - **Zero rulebook lookups** for scoring during a test night.
 - Final settlement takes **under 1 minute** with no disputes.
 - The group chooses to use it again the following game night.

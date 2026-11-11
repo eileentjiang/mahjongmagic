@@ -8,9 +8,9 @@ web
 
 ## Stack
 
-Vite + React + TypeScript, Tailwind CSS, Lucide icons. One small serverless function for photo recognition, so the API key never reaches the browser. No database; all state is in `localStorage` behind a single storage module. Scoring, pattern detection, payout and seat-rotation logic are pure functions in `src/engine/`, unit-tested with Vitest.
+Vite + React + TypeScript, Tailwind CSS, Lucide icons. One tiny proxy (e.g. a Cloudflare Worker) for photo recognition, so the API key never reaches the browser or the repo. No database; all state is in `localStorage` behind a single storage module. Scoring, pattern detection, payout and seat-rotation logic are pure functions in `src/engine/`, unit-tested with Vitest.
 
-Hosting: a shareable web link (Vercel or Netlify), not built or deployed yet.
+Hosting: GitHub Pages (a shareable web link), not built or deployed yet.
 
 ## Users
 
@@ -59,7 +59,7 @@ Hard constraints:
 - Every confirmed action persists immediately; with storage blocked, the app still works and says the night won't be saved.
 - Domain vocabulary, used the same in code and UI: night → wind round → hand; seat wind; table (prevailing) wind; dealer; flower number; self-draw; discard; payout scale.
 
-Photo scoring must identify every tile's suit and number/symbol, and reject blurry or dark photos with a retake prompt. When two players call the same discard, the first caller wins. Open decisions (from the PRD): how a substitute's balance carries (TBD); the recognition implementation and its accuracy target (proposed: 98% of tiles, 90% of hands with no corrections).
+Photo scoring must identify every tile's suit and number/symbol, and reject blurry or dark photos with a retake prompt. When two players call the same discard, the first caller wins. Open decisions (from the PRD): how a substitute's balance carries (TBD); the recognition implementation (accuracy target: 100%, with recognized tiles always shown for a quick confirm or fix); public vs. private repo for GitHub Pages.
 
 ## Brand Commitments
 
