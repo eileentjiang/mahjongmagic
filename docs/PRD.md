@@ -1,9 +1,10 @@
-# Mahjong Magic: Product Requirements Document (v0.3 draft)
+# Mahjong Magic: Product Requirements Document (v0.4 draft)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
-> Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (default rules reference), plus the research synthesis in the appendix below.
+> Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.4: The default scoring is now the owner's **"Game Night" house profile** on top of MCR: a minimum above 0 points, discarder pays 2× and the others 1×, self-draw doubles everyone's payment, the dealer keeps the deal on a win, only seat-matching flowers score, and a full flower set earns a bonus. The MCR reference now covers the whole rulebook (exclusions, fouls, rankings).
 > - v0.3: The default variant is now **"Hong Kong style (MCR rules)"**, based on the WMO *Mahjong Competition Rules* (2014). The default payout scale is **$0.10 per point**, editable. Added **house-rule presets** and **saved table profiles** to Feature A, so a group's usual rules take one tap.
 > - v0.2: MVP features rewritten around the owner's feature list (variant choice, cumulative rankings, photo scoring, seat/table info, manual adjustments). User flows, edge cases and DoD updated to match. Photo scoring and variant choice moved out of non-goals.
 > - v0.1: first draft.
@@ -54,41 +55,47 @@ Five features. Each one is written as *[user action] → [system reaction]*.
 **[User chooses a variant, plus any house rules]** → **[System uses that rulebook and scoring system for the whole night, including how a hand pays out on a self-draw vs. a discard. The group's usual setup is remembered, so next time it takes one tap.]**
 
 **A1. Variant (the base rulebook)**
-- **v1 default: "Hong Kong style (MCR rules)".** The scoring follows the WMO *Mahjong Competition Rules* (2014): 81 fan, an 8-point minimum to win, and the official payout formula. Full reference: [`variants/MCR.md`](./variants/MCR.md).
+- **v1 variant: "Hong Kong style (MCR rules)".** The fan list and combining rules come from the WMO *Mahjong Competition Rules* (2014): 81 fan, 1–88 points each. Full reference: [`variants/MCR.md`](./variants/MCR.md).
+- **v1 default house profile: "Game Night"**, the owner's rules, applied on top of MCR. See [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) and A4. The owner will refine it after test nights, so every rule in it is a setting, not hard-coded.
 - The variant sets the scoring patterns, point values, minimum to win, dealer rules, flower rules, and the **payout split**:
-  - **Self-draw:** each of the other 3 players pays *hand points + 8*.
-  - **Discard:** the discarder pays *hand points + 8*, and the other two pay *8* each.
+  - **Default (Game Night):** with hand value **H = points × payout scale**: on a **discard**, the discarder ("big loser") pays **2H** and the other two pay **H** each. On a **self-draw**, **all three pay 2H**.
+  - **Pure MCR (selectable):** self-draw → each pays points + 8. Discard → the discarder pays points + 8 and the others pay 8.
 - Other variants show in the picker as "coming soon". Each variant is a **rules config (data)**, so adding one doesn't need a new engine.
 
 **A2. Payout scale**
-- **Default: $0.10 per point** (6 points = $0.60). Example: a 10-point hand won off a discard → the discarder pays $1.80, the others pay $0.80 each, and the winner gets +$3.40.
+- **Default: $0.10 per point** (6 points = $0.60). Examples under Game Night rules: a 6-point hand off a discard → the discarder pays $1.20, the others $0.60 each, and the winner gets +$2.40. A 6-point self-draw → everyone pays $1.20, and the winner gets +$3.60.
 - Editable before the night starts and mid-night (Feature E). Saved with the table profile (A4).
 
 **A3. House-rule presets (popular tweaks, toggled on or off)**
 Groups rarely play pure rulebook rules. Rather than typing custom rules each time, the user **toggles from a list of common house rules**, each with a one-line explanation and its effect on scoring:
 
+Presets marked ★ are **on in the Game Night default profile**.
+
 | Preset house rule | What it changes (vs. MCR) |
 |---|---|
-| **Dealer stays on a win** ("dice stays") | The dealer keeps the deal after winning. MCR passes the deal every hand. |
+| ★ **Dealer stays on a win** ("dice stays") | The dealer keeps the deal after winning. MCR passes the deal every hand. |
 | **Dealer stays on a draw** | The deal doesn't pass after a draw. |
-| **Own-seat flowers** | Flowers matching your seat number score extra, so players get a new flower # when the deal moves. MCR: 1 pt per flower, any seat. |
-| **Lower minimum to win** (e.g. 8 → 6, 3 or 0) | Friendlier for beginners and faster games. |
+| ★ **Own-seat flowers only** | Only flowers matching your seat number score; others are worth 0. Players get a new flower # when the deal moves. MCR: 1 pt per flower, any seat. |
+| ★ **Full flower set bonus** | All 4 flowers or all 4 seasons scores a fixed bonus (amount set by the group). |
+| ★ **Lower minimum to win** (e.g. 8 → 6, 3, or **more than 0** ★) | Friendlier for beginners and faster games. |
 | **Flowers count toward the minimum** | MCR excludes flowers from the 8-point minimum. |
-| **No +8 base** | Pay only the hand's points × scale. The discarder pays all of it on a discard, and everyone pays it on a self-draw. |
+| ★ **No +8 base** | Pay only the hand's points × scale. The discarder pays all of it on a discard, and everyone pays it on a self-draw. |
+| ★ **Discarder pays double** | On a discard, everyone pays the hand value and the discarder pays 2×. |
 | **Discarder pays for everyone** | On a discard, the discarder covers the other two players' share too. |
-| **Self-draw bonus** | Self-draw pays × N (e.g. double). |
+| ★ **Self-draw bonus** | Self-draw pays × N (default **double**). |
 | **Point cap** | Clamp a hand at N points (MCR has no cap). |
 | **Kong paid on the spot** | A kong triggers an immediate small payment from the others (amount set by the group). |
 | **False-win penalty** | A false mahjong pays a set amount to each player. |
 
 - **Custom house rule** (fallback): a named one-off rule with a point or $ amount, for anything not in the list.
-- **[OPEN]** Confirm which of these the owner's group plays. Those become the v1 defaults for the owner's profile, and the list gets validated with 2–3 other groups.
+- The ★ set is the owner's group's rules. It ships as the default, and the remaining open details are tracked in [`GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md#3-open-questions-settle-during-test-nights). The list is validated with 2–3 other groups.
 
 **A4. Saved table profiles (least-friction repeat setup)**
 - A **table profile** is a named bundle: *variant + house rules + payout scale + usual players and seats* (e.g. "Thursday crew").
 - After the first night, the app offers: **"Save this setup as a table profile?"**
 - Next time, the start screen shows **"Play again with Thursday crew"**. One tap starts a night with everything pre-filled, and anything can still be changed before starting.
-- With no profile, the last-used setup is pre-selected (floor sticky: "default to the rules of the last play for easy select").
+- **Built-in profile: "Game Night (default)"**, the ★ rules above at $0.10/point. Brand-new users start from it, and it can be copied and edited but not deleted. A **"Pure MCR"** built-in profile is also offered for groups that play by the book.
+- With no profile of their own, the last-used setup is pre-selected (floor sticky: "default to the rules of the last play for easy select").
 - Profiles can be renamed, edited, duplicated and deleted. Changing a profile never changes nights that have already been played.
 
 ### Feature B: Track cumulative rankings and payouts
@@ -113,7 +120,7 @@ Groups rarely play pure rulebook rules. Rather than typing custom rules each tim
 **[User checks their seat]** → **[System shows each player's flower number, seat wind and the table (prevailing) wind, with the character, its English name, and a picture of the matching tile, so people who don't read Chinese can follow along and points are assigned clearly.]**
 - The table view shows all 4 players with their seat wind (東南西北 + East/South/West/North), flower # (1–4 with the matching flower and season tiles), the dealer badge, and the current table wind.
 - **Auto-advance:** when the deal moves ("the dice moves"), seat winds and flower numbers rotate and **everyone gets their new flower #**. When the dealer keeps the deal (only with the *dealer stays* house rule; MCR always passes it), nothing rotates. After four rotations, the table wind advances.
-- Flower # only affects scoring when the *own-seat flowers* house rule is on. Under plain MCR every flower is 1 point, and the flower # is shown for reference only.
+- Flower # drives scoring under the default (Game Night) profile, where only seat-matching flowers count: East 1 = Spring/Plum, South 2 = Summer/Orchid, West 3 = Autumn/Chrysanthemum, North 4 = Winter/Bamboo. Under pure MCR every flower is 1 point, and the flower # is shown for reference only.
 - Feature C uses these values automatically, so seat-wind, round-wind, and own-flower points are always applied correctly.
 - **"My seat" view:** a player can tap their name to see a large, readable card with their wind, flower #, and the tiles that score for them.
 
@@ -150,8 +157,8 @@ Groups rarely play pure rulebook rules. Rather than typing custom rules each tim
 ### 5.1 Onboarding: open link → choose type of play → players & positions
 1. User opens the link and sees **"Start a new game night"**, plus **"Play again with ‹profile›"** for each saved table profile, and **"Continue last night"** if a saved session exists.
    - **Fast path:** tapping a table profile skips straight to a one-screen confirmation (rules summary + players), and one more tap starts the night.
-2. **Choose the type of play:** the variant picker (Feature A), with the last-used variant pre-selected. Default: *Hong Kong style (MCR rules)*.
-3. **House rules & payout:** toggle the house-rule presets (each with a one-line explanation), add a custom rule if needed, and confirm the payout scale (default $0.10/point). A summary line shows what's in play, e.g. "MCR · 8-pt min · dealer stays · $0.10/pt".
+2. **Choose the type of play:** the variant picker (Feature A), with the last-used variant pre-selected. Default: *Hong Kong style (MCR rules)* with the *Game Night* house profile.
+3. **House rules & payout:** toggle the house-rule presets (each with a one-line explanation), add a custom rule if needed, and confirm the payout scale (default $0.10/point). A summary line shows what's in play, e.g. "Game Night · MCR fan · min > 0 · discarder ×2 · self-draw ×2 · dealer stays · $0.10/pt".
 4. **Who's at the table and where:** enter 4 names and place them in seats (East/South/West/North). East is the first dealer. Seats can be dragged to match the real table, or randomized ("roll for seats").
 5. The table view appears: each player's seat wind, flower #, $0.00 balance, the dealer badge, and the table wind.
 6. At the end of a first night (or whenever the user chooses), the app offers to **save the setup as a table profile**.
@@ -236,20 +243,20 @@ Groups rarely play pure rulebook rules. Rather than typing custom rules each tim
 
 ## 7. Constraints & conventions
 
-### Rules variant (decided: MCR as the default)
-The v1 default is **WMO Mahjong Competition Rules (2014)**, labelled "Hong Kong style (MCR rules)". Details: [`variants/MCR.md`](./variants/MCR.md).
+### Rules (decided: MCR fan + Game Night house profile)
+The v1 variant is **WMO Mahjong Competition Rules (2014)**, labelled "Hong Kong style (MCR rules)" ([`variants/MCR.md`](./variants/MCR.md)). The default house profile is **Game Night** ([`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md)).
 
-| Question | MCR answer (default) | House-rule preset that changes it |
-|---|---|---|
-| Scoring patterns & values | 81 fan, 1–88 points | Custom house rule |
-| Points → $ | **$0.10 per point** (owner's default) | Payout scale (editable) |
-| Discard win | Discarder pays points + 8; others pay 8 | *No +8 base*, *Discarder pays for everyone* |
-| Self-draw | Each of the 3 pays points + 8 | *Self-draw bonus*, *No +8 base* |
-| Dealer | Deal passes every hand | *Dealer stays on a win / on a draw* |
-| Minimum / cap | 8 points (flowers excluded) / no cap | *Lower minimum*, *Flowers count*, *Point cap* |
-| Flowers | 1 pt each, any seat | *Own-seat flowers* |
+| Question | Game Night default | Pure MCR | Preset that changes it |
+|---|---|---|---|
+| Scoring patterns & values | MCR's 81 fan | 81 fan, 1–88 points | Custom house rule |
+| Points → $ | **$0.10 per point** | n/a | Payout scale |
+| Discard win | Discarder pays **2H**; others pay **H** | Discarder pays points + 8; others pay 8 | *Discarder pays double*, *Discarder pays for everyone*, *No +8 base* |
+| Self-draw | Each of the 3 pays **2H** | Each pays points + 8 | *Self-draw bonus*, *No +8 base* |
+| Dealer | Keeps the deal on a win; otherwise it passes | Passes every hand | *Dealer stays on a win / on a draw* |
+| Minimum / cap | **More than 0** / none | 8 (flowers excluded) / none | *Lower minimum*, *Point cap* |
+| Flowers | Only seat-matching flowers score; full set bonus | 1 pt each, any seat | *Own-seat flowers only*, *Full flower set bonus* |
 
-**[OPEN]** Which presets the owner's group actually plays, and whether they use the +8 base. A 10-point discard win pays **$3.40** with it and **$1.00** without it.
+**[OPEN]** Remaining details (flower values, full-set bonus, draw-game dealer, Chicken Hand, Self-Drawn fan under doubling) are listed in [`GAME_NIGHT_DEFAULT.md` §3](./variants/GAME_NIGHT_DEFAULT.md#3-open-questions-settle-during-test-nights) and get settled during test nights.
 
 Variants and house rules are a **rules config (data)** plus test hands, never hard-coded. House-rule presets are config modifiers applied on top of a variant.
 
@@ -291,9 +298,11 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] With storage blocked, the app still works and shows the "won't be saved" banner.
 
 **A. Variant, house rules, payout scale & profiles**
-- [ ] User can choose a variant before starting, and the night's scoring uses that variant's rules. The default is "Hong Kong style (MCR rules)".
-- [ ] With the defaults ($0.10/pt, MCR), a 10-point discard win pays −$1.80 / −$0.80 / −$0.80 and the winner +$3.40. A 10-point self-draw pays −$1.80 × 3 and the winner +$5.40.
-- [ ] A hand under 8 points (excluding flowers) is flagged as not a valid win under MCR defaults.
+- [ ] User can choose a variant before starting, and the night's scoring uses that variant's rules. The default is "Hong Kong style (MCR rules)" with the Game Night profile.
+- [ ] With the defaults (Game Night, $0.10/pt), a 6-point discard win pays −$1.20 (discarder) / −$0.60 / −$0.60 and the winner +$2.40. A 6-point self-draw pays −$1.20 × 3 and the winner +$3.60.
+- [ ] With the defaults, a dealer win keeps the same dealer, and a non-dealer win moves the deal to the next player and updates every flower #.
+- [ ] With the defaults, a flower scores only for the player whose seat # it matches, and a full set adds the configured bonus.
+- [ ] Switching to the "Pure MCR" profile, a 10-point discard win pays −$1.80 / −$0.80 / −$0.80 (winner +$3.40), and a hand under 8 points (excluding flowers) is flagged as not a valid win.
 - [ ] Toggling each house-rule preset changes the result of its reference test hand as described in §3 A3.
 - [ ] Conflicting presets can't both be active.
 - [ ] Saving a table profile and choosing "Play again with ‹profile›" starts a night with the same variant, house rules, payout scale and players in **at most 2 taps**.
@@ -309,7 +318,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 
 **C. Photo scoring**
 - [ ] Taking or uploading a photo shows a tile strip the user can edit.
-- [ ] For at least 10 reference hands entered as tiles (drawn from the MCR rulebook's Appendix 1 examples, plus hands from the owner's group), the system shows the correct total points and the correct named fan with reasons, applying the non-repeat and other combining rules.
+- [ ] For at least 10 reference hands entered as tiles (drawn from the MCR rulebook's Appendix 1 examples, whose combinations and exclusions are recorded in `variants/MCR.md` §5, plus hands from the owner's group), the system shows the correct total points and the correct named fan with reasons, applying the non-repeat and other combining rules.
 - [ ] For the reference photo set, recognized tiles match the real hand for at least **[OPEN]** % of photos. (This check is the accuracy target for the recognition approach.)
 - [ ] If recognition fails or times out, the manual tile entry opens and scoring can still be completed.
 - [ ] Cancel leaves balances and history unchanged.
