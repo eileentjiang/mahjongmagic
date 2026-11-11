@@ -209,7 +209,7 @@ Presets marked ★ are **on in the House default default profile**.
 
 ### 5.2 During play: each player knows what's relevant to their seat
 - The table view is always one tap away and shows each player's **seat wind, flower #, and the table wind** (Feature D), in Chinese and English with tile pictures.
-- Tapping a name opens that player's **"My seat"** card (big text, readable across the table).
+- Tapping a name opens that player's **"My seat"** card (big text, readable across the table). In a shared session, only your own seat can be tapped; other players' seats are view-only.
 - Players can see the **current standings** at any time without leaving the table view.
 - **"Record kong"** quick action during a game: choose who declared it and the type (melded / concealed / self-drawn). The app pays it immediately from the other players (House default: 2 or 4 points × scale), and the standings update.
 - **"No winner (draw)"** opens a quick confirm: "Record a draw for game 6? No money moves · deal passes to Ben."
