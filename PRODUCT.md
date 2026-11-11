@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Vite + React + TypeScript, Tailwind CSS, Lucide icons. One tiny proxy (e.g. a Cloudflare Worker) for photo recognition, so the API key never reaches the browser or the repo. No database; all state is in `localStorage` behind a single storage module. Scoring, pattern detection, payout and seat-rotation logic are pure functions in `src/engine/`, unit-tested with Vitest.
+Vite + React + TypeScript, Tailwind CSS, Lucide icons. One tiny proxy (e.g. a Cloudflare Worker) for photo recognition, so the API key never reaches the browser or the repo. State is saved to `localStorage` first and, for shared sessions, synced through a small live-sync service (provider [OPEN]) so every phone at the table sees the same session. Scoring, pattern detection, payout and seat-rotation logic are pure functions in `src/engine/`, unit-tested with Vitest.
 
 Hosting: GitHub Pages (a shareable web link), not built or deployed yet.
 
@@ -54,7 +54,7 @@ MVP features (detail in `docs/PRD.md` §3):
 Hard constraints:
 
 - Exactly 4 seated players; English UI with Chinese characters alongside for winds, flowers and tiles.
-- No accounts, sync, payment integrations, ads, analytics, tutorials, or stored photos.
+- No accounts, payment integrations, ads, analytics, tutorials, or stored photos. Sync exists only to share one session between the phones at a table (join by code; one phone can also keep score for everyone).
 - Money is stored as integer cents, and balances always sum to exactly $0.
 - Every confirmed action persists immediately; with storage blocked, the app still works and says the session won't be saved.
 - Domain vocabulary, used the same in code and UI: session → wind round → hand; seat wind; table (prevailing) wind; dealer; flower number; self-draw; discard; payout scale.

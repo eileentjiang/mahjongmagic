@@ -1,9 +1,10 @@
-# Mahjong Magic: Product Requirements Document (v0.7 draft)
+# Mahjong Magic: Product Requirements Document (v0.10 draft)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.10: **Shared session is MVP (Feature F).** Everyone can join the same live session from their own phone with a 4-letter code or QR; each phone claims a seat, scoring defaults to "you" as the winner, and every confirmed game updates every phone. A single scorekeeper on one phone stays fully supported, and can invite others at any time without restarting anything. Navigation during a session is a 3-tab bar (Table · Score a win · Standings), where Score opens the camera directly. Needs a small live-sync service, so the "no sync / localStorage only" rule is replaced.
 > - v0.9: Terminology: a **game** is one deal (was "hand"), a **round** is a full lap of the dealer back to the first dealer (the table wind then advances), and a **session** is the whole sitting (was "night"; play doesn't have to be at night). The default house profile is renamed **House default** (was "Game Night"). "Hand" now only means the tiles a player holds.
 > - v0.8: The repo stays **public** (free GitHub Pages). **Player substitution and sit-out rotation move to Phase 2**, out of the MVP.
 > - v0.7.2: Confirmation is shown **only when recognition is unsure**; confident reads go straight to the score. The photo proxy is invisible to players: one link, one app.
@@ -66,7 +67,7 @@ Secondary personas (Beginner, Community Player, Eccentric) are covered in the ap
 
 ## 3. MVP scope (what to build)
 
-Five features. Each one is written as *[user action] → [system reaction]*.
+Six features. Each one is written as *[user action] → [system reaction]*. (F was added at v0.10 because shared play is core to how groups actually play.)
 
 ### Feature A: Choose the variant, house rules and payout scale
 **[User chooses a variant, plus any house rules]** → **[System uses that rulebook and scoring system for the whole session, including how a hand pays out on a self-draw vs. a discard. The group's usual setup is remembered, so next time it takes one tap.]**
@@ -151,14 +152,35 @@ Presets marked ★ are **on in the House default default profile**.
 - **One-off adjustment:** add a manual payment (e.g. a kong bonus, a penalty, a side bet) with a note. It counts in the ledger and must still net to $0.
 - **Override a score:** accept a hand below the minimum, or adjust the points for a house rule the variant doesn't cover, with a visible "manually adjusted" tag.
 
-**Cross-cutting:** all state persists on the device (local storage). A refresh, a closed tab, or a locked phone never loses the session.
+### Feature F: Shared session (everyone's phone) or a single scorekeeper
+**[Players join one live session from their own phones, or one person keeps score for everyone]** → **[Every phone sees the same table, standings and history in real time; nobody re-enters setup or scores twice.]**
+
+**Two ways to play, same app:**
+- **Single scorekeeper (default):** one phone runs all four seats, exactly as the rest of this PRD describes. Nothing to join.
+- **Shared session:** whoever starts the session can tap **Invite** at any time. That shows a **4-letter code** (e.g. KHTW), a **QR code** and a share link. Inviting never restarts anything: seats, scores, game number and history carry over, and the scorekeeper's phone simply becomes one of the players.
+
+**Joining:**
+1. On their phone a player opens the link and taps **Join a session**, then types the code or scans the QR.
+2. They see the four seats (names and winds were set by the host) and tap **their own seat**. Seats already claimed show "On Amy's phone". A phone can also **watch only**.
+3. They land on the Table screen with **their seat marked "You"**. They never see the Rules or Players setup screens; those belong to the session.
+
+**Playing together:**
+- **Each phone knows who's holding it.** "Score a win" assumes **you** are the winner; you only choose self-draw or discard (and who discarded). The winner can still be changed.
+- **One shared ledger.** Confirming a game (or a kong, a draw, an edit) updates **every phone**, live. Nobody updates scores separately.
+- **One scorer at a time.** While someone is scoring, other phones show "Chloe is scoring game 6…" and their Score button is paused, so a game can't be entered twice.
+- **Anyone can view** standings, history and their own "My seat" card at any time.
+- No accounts: a phone is remembered for that session only.
+
+**Navigation during a session:** a bottom tab bar with three items: **Table**, **Score a win** (the large centre button, which opens the camera directly, so a fluent player is one tap from snapping the hand), and **Standings**. Everything else (Home, Rules, Players, About, End session) lives in the **⋯ menu** on the Table screen.
+
+**Cross-cutting:** every confirmed action is saved immediately: on the device, and to the shared session when one exists. A refresh, a closed tab, a locked phone or a dropped connection never loses the session; a phone that rejoins catches up automatically.
 
 ---
 
 ## 4. Non-goals (do not build for v1)
 
 - **No teaching the game.** No tutorials or strategy hints. The plain-language pattern explanations in Feature C and the seat info in Feature D are the limit.
-- **No accounts, logins, or cloud sync.** One device runs the session (passed around, or kept by one scorekeeper), with local storage only. Other players' phones don't sync.
+- **No accounts or logins.** Phones join a session with a code; nothing is stored about a person beyond their name in that session. Sync exists only to share one session between the phones at that table.
 - **No third-party payment integrations** (Venmo, PayPal, etc.). The app shows who owes whom, and money moves outside the app.
 - **No live video or continuous scanning.** A single still photo per winning hand only.
 - **No full support for every variant in v1.** The picker and data model support many, but only the [OPEN] chosen preset(s) are fully implemented.
@@ -190,7 +212,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **"Bonus payment"** for other one-off or side payments (Feature E).
 
 ### 5.3 Scoring: calculate, track, and show to everyone
-1. When someone wins, any player taps **"Score a win"**.
+1. When someone wins, any player taps **"Score a win"** (the centre tab). In a shared session the winner taps it on their own phone, and the app pre-selects them as the winner.
 2. They **take a photo** of the winning hand (or tap **"Enter tiles manually"**).
 3. If the app is unsure about any tile, it **flashes what it picked up** and asks the user to confirm or fix the highlighted tiles. If it's confident, this step is skipped.
 4. They choose **who won** and **self-draw / discard (from whom)**, and tick any extra conditions.
@@ -267,6 +289,15 @@ Presets marked ★ are **on in the House default default profile**.
 
 ---
 
+### Shared sessions (Feature F)
+- **Two phones tap Score at once:** the first one to start holds the game; the other sees "Chloe is scoring game 6…" and can only watch. If the scorer abandons it (closes the app or cancels), the hold releases after a short timeout.
+- **A phone drops offline mid-session:** it keeps showing the last known state with an "Offline, reconnecting…" banner and can't confirm new games; on reconnect it catches up. The host's phone can still score offline and syncs later.
+- **Someone claims the wrong seat:** they can switch seat from the ⋯ menu; the host can also free a seat.
+- **The host leaves or their phone dies:** the session isn't owned by one phone; anyone joined can keep scoring.
+- **Late joiner:** joining mid-session shows the current game number, balances and history; nothing restarts.
+- **More than four phones:** extra phones join as watch-only.
+- **Edits and undo** made on any phone apply to everyone and are tagged with who made them.
+
 ## 7. Constraints & conventions
 
 ### Rules (decided: MCR fan + House default house profile)
@@ -305,8 +336,9 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 
 ### Tech stack (proposed, confirm in the spec phase)
 - A web app: **Vite + React + TypeScript**, **Tailwind CSS**, **Lucide** icons.
-- **One tiny proxy** for photo recognition (e.g. a Cloudflare Worker, free tier) that holds the AI API key and forwards the photo. Everything else is static. No database.
-- Persistence goes through a single storage module that wraps `localStorage`.
+- **One tiny proxy** for photo recognition (e.g. a Cloudflare Worker, free tier) that holds the AI API key and forwards the photo.
+- **A small live-sync service for shared sessions** (Feature F). **[OPEN]** Options: Supabase Realtime or Firebase (hosted, free tier, fastest to build), or a Cloudflare Durable Object next to the photo proxy (one provider for everything). It stores only the session: seats, names, games, rules, balances. Sessions expire after a set time (e.g. 30 days).
+- Persistence goes through a single storage module: it writes to `localStorage` first (offline-safe) and syncs to the shared session when one exists.
 - **Scoring, pattern detection, payout, and seat-rotation logic live in pure functions** (`src/engine/`), separate from the UI, with unit tests (Vitest) for every pattern and payout rule.
 - **Hosting (decided): GitHub Pages**, a shareable web link (e.g. `<username>.github.io/mahjongmagic`). Players open it on their phones; no app-store install. It deploys automatically from the repo.
   - GitHub Pages only serves static files and can't hide a secret, so the photo-recognition API key lives in the separate proxy above. **The proxy is invisible to players:** they only ever use the one link, with no extra sites, accounts or sign-ins. The app calls the proxy behind the scenes. Setting it up is a one-time job for the owner/developer.
@@ -330,6 +362,16 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 **General**
 - [ ] The page loads with zero console errors on mobile Safari and Chrome.
 - [ ] There is no horizontal scroll at 360px width, and all tap targets are ≥ 44px.
+
+**Shared session (Feature F)**
+- [ ] A host can show a 4-letter code and QR at any point in a session; inviting does not reset seats, balances, history or game number.
+- [ ] A second phone can join with the code, claim an unclaimed seat, and land on the Table screen with that seat marked "You", without seeing Rules or Players setup.
+- [ ] A claimed seat can't be claimed by another phone; a phone can join as watch-only.
+- [ ] Confirming a game on one phone updates standings and history on every joined phone within 2 seconds.
+- [ ] While one phone is scoring, the others show who is scoring and can't start a second score for the same game.
+- [ ] "Score a win" pre-selects the phone's own player as the winner.
+- [ ] A phone that loses connection and comes back catches up to the current state without duplicating or losing games.
+- [ ] The tab bar shows Table, Score a win and Standings; Score a win opens the camera in one tap.
 
 **Persistence**
 - [ ] Refreshing the page keeps all players, seats, confirmed games, and balances (from localStorage).
