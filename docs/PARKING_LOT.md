@@ -14,6 +14,7 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 
 | Idea | Source | Horizon |
 |---|---|---|
+| **Phase 2:** player substitution mid-night (whose balance a seat carries is TBD; proposed: freeze the leaver's balance, newcomer starts at $0) and sit-out/rejoin rotation for groups of 5+ | Removed from MVP by owner | Next |
 | Share a table profile with friends (link/QR) so everyone uses the same house rules | Extends MVP table profiles (Feature A4) | Next |
 | MCR-style session ranking points (4/2/1/0 per game) alongside $ standings | MCR rulebook §3.9.2 | Later |
 | Season standings / rankings across nights, even after payout | Pain point: "continued ranking even post payout" | Next |

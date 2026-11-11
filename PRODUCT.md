@@ -49,7 +49,7 @@ MVP features (detail in `docs/PRD.md` §3):
 - **B. Cumulative standings.** Per-hand +/−$, running balance and rank; roll-ups per wind round and per night; at most 3 settlement transfers; finish, or save and continue later.
 - **C. Photo scoring.** A still photo becomes an editable tile strip, then points, per-pattern reasons and a payout preview. Manual tile entry is always available, and scoring never depends on the camera or network.
 - **D. Seat and table.** Each player's seat wind, flower number, the dealer and the table wind, shown in Chinese and English with a tile picture. Rotation is automatic. A large "My seat" card for each player.
-- **E. Manual adjustments.** Edit or undo any hand (everything after it recalculates), change the payout scale from now on or for the whole night, substitute players, override seating, add one-off payments, and override scores with a visible tag.
+- **E. Manual adjustments.** Edit or undo any hand (everything after it recalculates), change the payout scale from now on or for the whole night, override seating, add one-off payments, and override scores with a visible tag.
 
 Hard constraints:
 
@@ -59,7 +59,7 @@ Hard constraints:
 - Every confirmed action persists immediately; with storage blocked, the app still works and says the night won't be saved.
 - Domain vocabulary, used the same in code and UI: night → wind round → hand; seat wind; table (prevailing) wind; dealer; flower number; self-draw; discard; payout scale.
 
-Photo scoring must identify every tile's suit and number/symbol, and reject blurry or dark photos with a retake prompt. When two players call the same discard, the first caller wins. Open decisions (from the PRD): how a substitute's balance carries (TBD); the recognition implementation (accuracy target: 100%; confirmation is asked only when recognition is unsure; the photo proxy is invisible to players, who only ever use one link); public vs. private repo for GitHub Pages.
+Photo scoring must identify every tile's suit and number/symbol, and reject blurry or dark photos with a retake prompt. When two players call the same discard, the first caller wins. Photo recognition targets 100% accuracy, asks for confirmation only when unsure, and its proxy is invisible to players, who only ever use one link. Hosting: GitHub Pages from the public repo. Player substitution is Phase 2.
 
 ## Brand Commitments
 

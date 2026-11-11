@@ -4,6 +4,7 @@
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.8: The repo stays **public** (free GitHub Pages). **Player substitution and sit-out rotation move to Phase 2**, out of the MVP.
 > - v0.7.2: Confirmation is shown **only when recognition is unsure**; confident reads go straight to the score. The photo proxy is invisible to players: one link, one app.
 > - v0.7.1: Hosting on **GitHub Pages**, with the photo-recognition call going through a tiny separate proxy (Pages can't keep an API key secret). Accuracy target raised to **100%**, with the recognized tiles always shown for a quick confirm or fix.
 > - v0.7: Photo recognition must identify every tile's suit and number/symbol, and **blurry or low-light photos are rejected with a retake prompt** before scoring. When two players call the same discard, **the first to call wins**. Hosting: **a shareable web link**. Substitute balances remain TBD.
@@ -134,7 +135,7 @@ Presets marked ★ are **on in the Game Night default profile**.
 **[User changes players, house rules, seating, or a past score]** → **[System accepts the change, and one-off adjustments, and recalculates everything that depends on it.]**
 - **Edit or undo a hand:** change the winner, method, tiles, or points of any past hand. All later balances, rankings, and seat rotations recalculate.
 - **Change the payout scale or house rules mid-night:** choose whether the change applies **from now on** (default) or **to the whole night**. Every hand stores the scale it was scored with, so history is never rewritten by accident.
-- **Swap or add players:** a new player can take a seat mid-game (see §6 for how balances are handled). Players can also swap seats.
+- **Swap seats:** players can swap seats or fix names mid-night. *(Substituting a new player into a seat is **Phase 2**; see the parking lot.)*
 - **Change seating / dealer:** override the dealer, the table wind, or the seat order if the app's tracking drifts from the real table.
 - **One-off adjustment:** add a manual payment (e.g. a kong bonus, a penalty, a side bet) with a note. It counts in the ledger and must still net to $0.
 - **Override a score:** accept a hand below the minimum, or adjust the points for a house rule the variant doesn't cover, with a visible "manually adjusted" tag.
@@ -153,6 +154,7 @@ Presets marked ★ are **on in the Game Night default profile**.
 - **No multi-table, tournament, or lobby features** (finding tables, queuing, skill matching).
 - **No full multi-language UI.** English UI, with Chinese characters shown next to English for winds, flowers, and tiles.
 - **No 3-player or 5+ player games.** Exactly 4 players are seated at once.
+- **No player substitution or sit-out rotation mid-night** (Phase 2). The same 4 players play the whole night.
 - **No storing photos** after the hand is scored (privacy, and storage limits).
 - **No ads and no analytics.**
 
@@ -219,10 +221,8 @@ Presets marked ★ are **on in the Game Night default profile**.
 - **Profile players who aren't here tonight:** the profile pre-fills its usual players, and the user can swap anyone before starting.
 - **Deleting a profile** asks for confirmation. Past nights played with it stay intact (each night stores its own copy of the rules).
 
-### New players come in halfway through a game
-- **Substitution:** a new player takes over an existing seat. **[OPEN, TBD by owner]** whose balance does the seat carry? Proposed default: the leaving player's balance is **frozen** and settled at the end of the night, and the newcomer starts at $0 in that seat. They appear as separate rows in the final standings.
-- **Rotation (more than 4 people in the group):** players can **sit out and rejoin**. Only 4 are seated at a time, but everyone who played appears in the standings and the settlement.
-- The seat wind and flower # stay with the **seat**, not the person. The newcomer gets that seat's info right away.
+### Players and names
+- **New players halfway through a night: Phase 2, not MVP.** In the MVP, a group that changes players ends the night ("Save & continue later" or "Finish") and starts a new one. See the parking lot.
 - Duplicate names trigger a warning (allowed, but suffixed: "Sam (2)"). Empty names are blocked.
 
 ### Photo recognition
@@ -299,7 +299,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - **Scoring, pattern detection, payout, and seat-rotation logic live in pure functions** (`src/engine/`), separate from the UI, with unit tests (Vitest) for every pattern and payout rule.
 - **Hosting (decided): GitHub Pages**, a shareable web link (e.g. `<username>.github.io/mahjongmagic`). Players open it on their phones; no app-store install. It deploys automatically from the repo.
   - GitHub Pages only serves static files and can't hide a secret, so the photo-recognition API key lives in the separate proxy above. **The proxy is invisible to players:** they only ever use the one link, with no extra sites, accounts or sign-ins. The app calls the proxy behind the scenes. Setting it up is a one-time job for the owner/developer.
-  - GitHub Pages on a **private** repo needs a paid GitHub plan; a public repo is free. **[OPEN]** Keep the repo public, or upgrade?
+  - **Decided:** the repo stays **public**, so GitHub Pages is free. No secrets are ever committed; the API key lives only in the proxy.
   - *Nothing is built or deployed yet.*
 
 ### Design direction **[TBD]**
@@ -369,7 +369,6 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] Editing or deleting a past hand recalculates all later balances, rankings, and seat rotations.
 - [ ] Undo last hand restores balances and table state exactly to before it.
 - [ ] Changing the payout scale "from the next hand" leaves past hands unchanged. "Recalculate the whole night" updates all of them, and a preview is shown first.
-- [ ] A new player can take a seat mid-night, and both the leaving and joining players appear in the final standings.
 - [ ] A one-off adjustment with a note shows in the ledger and keeps the $0 sum.
 - [ ] Manually overriding the dealer, table wind, or seat order updates the table view immediately.
 
