@@ -15,13 +15,14 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 | Idea | Source | Horizon |
 |---|---|---|
 | Dedicated kong scoring flow (MVP handles kongs as one-off adjustments) | Journey: "intermediate wins (kong)", "track in-between payouts" | Next |
-| Multiple saved house-rule profiles ("Mom's table", "Work crew") | Pain point: house rules | Next |
+| Share a table profile with friends (link/QR) so everyone uses the same house rules | Extends MVP table profiles (Feature A4) | Next |
+| MCR-style session ranking points (4/2/1/0 per game) alongside $ standings | MCR rulebook §3.9.2 | Later |
 | Season standings / rankings across nights, even after payout | Pain point: "continued ranking even post payout" | Next |
 | Player stats: win rate, favorite hands, biggest hand of the night | Natural extension of history | Later |
 | Shareable end-of-night summary (image/text to paste into a group chat) | Settlement step | Next |
 | Export / backup / import of nights (JSON or CSV) | Edge case: storage cleared | Next |
 | Payment deep links (prefilled Venmo/PayPal requests; not an integration) | Settlement step | Later |
-| False-win / penalty handling | Edge case | Later |
+| Full penalty system (MVP only has a flat false-win preset) | MCR rulebook §3.11 | Later |
 | Multiple winners on one discard | Edge case | Later |
 | Installable PWA with full offline support | Constraint | Next |
 
@@ -51,7 +52,8 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 | Idea | Source | Horizon |
 |---|---|---|
 | Additional variant presets beyond the v1 preset(s) (Riichi, MCR, Taiwanese 16-tile, American NMJL, Singaporean…) | "Regional styles + house rule combinations" (picker ships in MVP Feature A) | Next |
-| Custom rule builder (add/edit scoring items and point values) | "House rule combinations" | Later |
+| Full custom rule builder: edit any fan's points, add new patterns (MVP has presets + simple custom rules) | "House rule combinations" | Later |
+| Community-sourced house-rule presets ("most popular in your area") | Extends MVP presets | Someday |
 | Alternative payout structures (half/full "spicy", per-point linear, chips) | "Other payout structures" | Later |
 | 3-player and other non-4-player formats | Edge case | Someday |
 
