@@ -14,6 +14,10 @@ Prioritize these in the feature-prioritization phase (e.g. with RICE or MoSCoW).
 
 | Idea | Source | Horizon |
 |---|---|---|
+| Edit, delete or undo a confirmed game (recalculate later balances and seats; "edited" tag; audit note) | Cut from MVP Feature E in PRD v0.11 | Next |
+| One-off payments: side bets, penalties, manual adjustments with a note | Cut from MVP Feature E in PRD v0.11 | Next |
+| Switch your claimed seat mid-session (shared session) | Cut from MVP Feature F in PRD v0.11; for now, start a new session | Later |
+| Win-context ticks on the score screen: won on the last tile, robbed a kong (and reversing a robbed kong's payment) | Cut from MVP Feature C in PRD v0.11; rare at the table | Later |
 | **Phase 2:** player substitution mid-session (whose balance a seat carries is TBD; proposed: freeze the leaver's balance, newcomer starts at $0) and sit-out/rejoin rotation for groups of 5+ | Removed from MVP by owner | Next |
 | Share a table profile with friends (link/QR) so everyone uses the same house rules | Extends MVP table profiles (Feature A4) | Next |
 | MCR-style session ranking points (4/2/1/0 per game) alongside $ standings | MCR rulebook §3.9.2 | Later |

@@ -1,9 +1,10 @@
-# Mahjong Magic: Product Requirements Document (v0.10 draft)
+# Mahjong Magic: Product Requirements Document (v0.11 draft)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.11: Scope trimmed after the flow review. **Editing, deleting or undoing past games, one-off payments, switching seats mid-session, and the win-context ticks (last tile, robbed a kong) move to the parking lot.** Added to the MVP: a quick confirm for a draw, a hand-entry tile picker, mid-session Rules and Players (with "next game on" or "whole session"), an "End session?" confirm, and the "save as a table profile" offer at the end of a session.
 > - v0.10: **Shared session is MVP (Feature F).** Everyone can join the same live session from their own phone with a 4-letter code or QR; each phone claims a seat, scoring defaults to "you" as the winner, and every confirmed game updates every phone. A single scorekeeper on one phone stays fully supported, and can invite others at any time without restarting anything. Navigation during a session is a 3-tab bar (Table · Score a win · Standings), where Score opens the camera directly. Needs a small live-sync service, so the "no sync / localStorage only" rule is replaced.
 > - v0.9: Terminology: a **game** is one deal (was "hand"), a **round** is a full lap of the dealer back to the first dealer (the table wind then advances), and a **session** is the whole sitting (was "night"; play doesn't have to be at night). The default house profile is renamed **House default** (was "Game Night"). "Hand" now only means the tiles a player holds.
 > - v0.8: The repo stays **public** (free GitHub Pages). **Player substitution and sit-out rotation move to Phase 2**, out of the MVP.
@@ -129,10 +130,10 @@ Presets marked ★ are **on in the House default default profile**.
 **[User takes a picture of the winning hand]** → **[System shows the point value and the reasons behind it, using the variant's fan names (e.g. "No Honors, 1 pt", "All Chows, 2 pts", "Mixed Double Chow, 1 pt", "Half Flush, 6 pts"), plus the payout preview.]**
 1. The user photographs the revealed hand, including melded sets and flowers.
 2. The system identifies each tile and shows them as a **tile strip** next to the score (tap a tile to change it, add a missing one, or remove one). It **only stops to ask for confirmation when it's unsure** about a tile; confident reads go straight to the score.
-3. The user confirms: **who won**, **self-draw or discard (from whom)**, and any context a photo can't show (e.g. won on the last tile, robbed a kong). Seat and round wind are filled in from Feature D.
+3. The user confirms: **who won** and **self-draw or discard (from whom)**. Seat and round wind are filled in from Feature D. *(Ticks for context a photo can't show, e.g. won on the last tile or robbed a kong, are in the parking lot; until then those patterns can be added by hand with "Add a scoring pattern".)*
 4. The system shows the **total points**, a **line-by-line breakdown of each scoring pattern** with a plain-language reason, and **what each player pays or receives**.
 5. **Confirm** sends the game to the ledger (Feature B). **Cancel** changes nothing.
-- **Fallback:** if the photo fails or the user has no camera, they can **build the hand by tapping tiles** in the same tile strip. Scoring never depends on the camera working.
+- **Fallback:** if the photo fails or the user has no camera, they **build the hand by tapping tiles** on a hand-entry screen: the hand so far on top (tap a tile to remove it, with a "9 of 14 tiles" count), and tiles to add below, grouped as Dots, Bamboo, Characters, Honours and Flowers. Scoring unlocks at 14 tiles (plus kong tiles and flowers). Scoring never depends on the camera working.
 - **[OPEN]** Recognition approach (see §7). It almost certainly needs a vision model behind a small server function, which changes the "no backend" assumption.
 
 ### Feature D: Seat and table assignments
@@ -144,12 +145,12 @@ Presets marked ★ are **on in the House default default profile**.
 - **"My seat" view:** a player can tap their name to see a large, readable card with their wind, flower #, and the tiles that score for them.
 
 ### Feature E: Manual adjustments
-**[User changes players, house rules, seating, or a past score]** → **[System accepts the change, and one-off adjustments, and recalculates everything that depends on it.]**
-- **Edit or undo a game:** change the winner, method, tiles, or points of any past game. All later balances, rankings, and seat rotations recalculate.
+**[User changes players, house rules, seating, or the score being entered]** → **[System accepts the change and recalculates everything that depends on it.]**
+- *Editing, deleting or undoing a game that's already confirmed is **not in the MVP** (parking lot). Before Confirm, everything on the score screen can still be changed.*
 - **Change the payout scale or house rules mid-session:** choose whether the change applies **from now on** (default) or **to the whole session**. Every game stores the scale it was scored with, so history is never rewritten by accident.
-- **Swap seats:** players can swap seats or fix names mid-session. *(Substituting a new player into a seat is **Phase 2**; see the parking lot.)*
+- **Fix names or seat order:** from ⋯ → Players & seats, mid-session. *(Substituting a new player into a seat is **Phase 2**; see the parking lot.)*
+- **Mid-session Rules and Players** are the same screens as setup, without the setup steps; **Save changes** returns to the Table. Phones that joined a shared session see them read-only.
 - **Change seating / dealer:** override the dealer, the table wind, or the seat order if the app's tracking drifts from the real table.
-- **One-off adjustment:** add a manual payment (e.g. a kong bonus, a penalty, a side bet) with a note. It counts in the ledger and must still net to $0.
 - **Override a score:** accept a hand below the minimum, or adjust the points for a house rule the variant doesn't cover, with a visible "manually adjusted" tag.
 
 ### Feature F: Shared session (everyone's phone) or a single scorekeeper
@@ -166,7 +167,7 @@ Presets marked ★ are **on in the House default default profile**.
 
 **Playing together:**
 - **Each phone knows who's holding it.** "Score a win" assumes **you** are the winner; you only choose self-draw or discard (and who discarded). The winner can still be changed.
-- **One shared ledger.** Confirming a game (or a kong, a draw, an edit) updates **every phone**, live. Nobody updates scores separately.
+- **One shared ledger.** Confirming a game (or a kong or a draw) updates **every phone**, live. Nobody updates scores separately.
 - **One scorer at a time.** While someone is scoring, other phones show "Chloe is scoring game 6…" and their Score button is paused, so a game can't be entered twice.
 - **Anyone can view** standings, history and their own "My seat" card at any time.
 - No accounts: a phone is remembered for that session only.
@@ -210,20 +211,20 @@ Presets marked ★ are **on in the House default default profile**.
 - The table view is always one tap away and shows each player's **seat wind, flower #, and the table wind** (Feature D), in Chinese and English with tile pictures.
 - Tapping a name opens that player's **"My seat"** card (big text, readable across the table).
 - Players can see the **current standings** at any time without leaving the table view.
-- **"Record kong"** quick action during a game: choose who declared it and the type (melded / concealed / self-drawn). The app pays it immediately from the other players (House default: 2 or 4 points × scale), and the standings update. Kongs can be undone or edited like any game entry.
-- **"Bonus payment"** for other one-off or side payments (Feature E).
+- **"Record kong"** quick action during a game: choose who declared it and the type (melded / concealed / self-drawn). The app pays it immediately from the other players (House default: 2 or 4 points × scale), and the standings update.
+- **"No winner (draw)"** opens a quick confirm: "Record a draw for game 6? No money moves · deal passes to Ben."
 
 ### 5.3 Scoring: calculate, track, and show to everyone
 1. When someone wins, any player taps **"Score a win"** (the centre tab). In a shared session the winner taps it on their own phone, and the app pre-selects them as the winner.
 2. They **take a photo** of the winning hand (or tap **"Enter tiles manually"**).
 3. If the app is unsure about any tile, it **flashes what it picked up** and asks the user to confirm or fix the highlighted tiles. If it's confident, this step is skipped.
-4. They choose **who won** and **self-draw / discard (from whom)**, and tick any extra conditions.
+4. They choose **who won** and **self-draw / discard (from whom)**.
 5. The system shows **total points + the reason for each pattern + each player's +/−$**.
 6. **Confirm** updates the ledger: balances animate to their new values and the **standings banner** shows the new ranking. The deal advances or stays, and seat winds and flower #s update (and the app announces "New flower numbers!" when they change).
 7. If there's no winner, **"Draw"** moves the deal according to the variant and moves no money.
 
 ### 5.4 Concluding: final payouts and standings, or continue later
-1. Typically after a full wind round (4 rounds), or whenever the group decides, a user taps **"End session"**.
+1. Typically after a full wind round (4 rounds), or whenever the group decides, a user taps **"End session"** and confirms ("End the session? … You can still reopen it for 24 hours").
 2. The summary shows **final standings**, net $ per player, per-round breakdowns, and the minimal **"who pays whom"** list.
 3. User chooses **"Finish"** (archives the session as read-only) or **"Save & continue later"** (resumes with the same seats, balances, and table wind next time).
 
@@ -238,10 +239,8 @@ Presets marked ★ are **on in the House default default profile**.
 - If the browser **cleared storage**, nothing can be recovered. Export/backup is in the parking lot.
 
 ### The user wants to go back and change scoring
-- Any past game can be **edited or deleted** from history (Feature E). All later balances, rankings, seat rotations, and dealer turns recalculate.
-- **Undo last game** is one tap from the table view, with a confirmation.
-- Edited games show an **"edited"** tag, and the summary keeps an audit note (what changed), so disputes can be settled.
-- Editing a game that changed who dealt (e.g. it turns out the dealer didn't win) re-plays the seat/wind sequence after it. The user is warned before confirming.
+- **MVP:** a confirmed game can't be edited or undone. Everything (winner, method, tiles, patterns) can be changed on the score screen before **Confirm**, and Cancel changes nothing.
+- Editing, deleting and undoing confirmed games (with recalculation and an "edited" tag) are in the parking lot.
 
 ### The user wants to change the payout scale
 - Payout scale can be changed **before starting** (onboarding) or **mid-session** (Feature E).
@@ -277,8 +276,6 @@ Presets marked ★ are **on in the House default default profile**.
 - **Kongs** (House default):
   - A kong recorded during a game stays paid even if that game ends in a draw or someone else wins.
   - If the kong owner wins, the photo/tile scorer leaves out the per-kong fans so the kong isn't paid twice.
-  - If the winner **robs an added kong**, the app offers to reverse that kong's payment (the kong was never completed).
-  - Deleting or undoing a game also asks whether to remove the kongs recorded during it.
 - **Multiple players call the same discard:** **the first player to call it wins** (house rule; MCR gives it to the next player after the discarder). Only one winner per game. The app just records whoever the table agrees called first.
 - Balances **always sum to $0**. Store money as integer cents, display 2 decimals, and never let rounding drift break the $0 sum.
 - Long sessions (50+ games) stay fast and readable. History scrolls, newest first.
@@ -294,11 +291,10 @@ Presets marked ★ are **on in the House default default profile**.
 ### Shared sessions (Feature F)
 - **Two phones tap Score at once:** the first one to start holds the game; the other sees "Chloe is scoring game 6…" and can only watch. If the scorer abandons it (closes the app or cancels), the hold releases after a short timeout.
 - **A phone drops offline mid-session:** it keeps showing the last known state with an "Offline, reconnecting…" banner and can't confirm new games; on reconnect it catches up. The host's phone can still score offline and syncs later.
-- **Someone claims the wrong seat:** they can switch seat from the ⋯ menu; the host can also free a seat.
+- **Someone claims the wrong seat:** there's no seat switching in the MVP; they rejoin, or the group starts a new session.
 - **The host leaves or their phone dies:** the session isn't owned by one phone; anyone joined can keep scoring.
 - **Late joiner:** joining mid-session shows the current game number, balances and history; nothing restarts.
 - **More than four phones:** extra phones join as watch-only.
-- **Edits and undo** made on any phone apply to everyone and are tagged with who made them.
 
 ## 7. Constraints & conventions
 
@@ -421,10 +417,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] Seat wind, round wind, and own-flower points in Feature C come from the current seat state, with no manual input.
 
 **E. Manual adjustments**
-- [ ] Editing or deleting a past game recalculates all later balances, rankings, and seat rotations.
-- [ ] Undo last game restores balances and table state exactly to before it.
 - [ ] Changing the payout scale "from the next game" leaves past games unchanged. "Recalculate the whole session" updates all of them, and a preview is shown first.
-- [ ] A one-off adjustment with a note shows in the ledger and keeps the $0 sum.
 - [ ] Manually overriding the dealer, table wind, or seat order updates the table view immediately.
 
 ---
