@@ -1,9 +1,10 @@
-# Mahjong Magic: Product Requirements Document (v0.6 draft)
+# Mahjong Magic: Product Requirements Document (v0.7 draft)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.7: Photo recognition must identify every tile's suit and number/symbol, and **blurry or low-light photos are rejected with a retake prompt** before scoring. When two players call the same discard, **the first to call wins**. Hosting: **a shareable web link**. Substitute balances remain TBD.
 > - v0.6: All Game Night rules settled. All three players pay each kong equally; Three/Four Kongs still score; Chicken Hand needs no flowers at all; no dealer bonus; seats stay put; no false-win penalty.
 > - v0.5: Game Night details settled: seat flower = 1 pt, full set = +2, flower-only hands can win, the dealer passes on a draw, and the Self-Drawn fan isn't counted. **Kongs are paid on the spot** (melded 2 pts, concealed/self-drawn 4 pts) and aren't counted again if the owner wins. Recording a kong is now a quick action during play.
 > - v0.4: The default scoring is now the owner's **"Game Night" house profile** on top of MCR: a minimum above 0 points, discarder pays 2× and the others 1×, self-draw doubles everyone's payment, the dealer keeps the deal on a win, only seat-matching flowers score, and a full flower set earns a bonus. The MCR reference now covers the whole rulebook (exclusions, fouls, rankings).
@@ -217,13 +218,16 @@ Presets marked ★ are **on in the Game Night default profile**.
 - **Deleting a profile** asks for confirmation. Past nights played with it stay intact (each night stores its own copy of the rules).
 
 ### New players come in halfway through a game
-- **Substitution:** a new player takes over an existing seat. **[OPEN]** whose balance does the seat carry? Proposed default: the leaving player's balance is **frozen** and settled at the end of the night, and the newcomer starts at $0 in that seat. They appear as separate rows in the final standings.
+- **Substitution:** a new player takes over an existing seat. **[OPEN, TBD by owner]** whose balance does the seat carry? Proposed default: the leaving player's balance is **frozen** and settled at the end of the night, and the newcomer starts at $0 in that seat. They appear as separate rows in the final standings.
 - **Rotation (more than 4 people in the group):** players can **sit out and rejoin**. Only 4 are seated at a time, but everyone who played appears in the standings and the settlement.
 - The seat wind and flower # stay with the **seat**, not the person. The newcomer gets that seat's info right away.
 - Duplicate names trigger a warning (allowed, but suffixed: "Sam (2)"). Empty names are blocked.
 
 ### Photo recognition
-- **Blurry, dark, or partial photo** → "We couldn't read all the tiles". The user retakes it, or fixes the tiles by hand. Low-confidence tiles are highlighted.
+- **Blurry or low-light photo** → the app **rejects it before scoring** and asks for a **retake** ("Too blurry / too dark — try again with more light and a steady hand"), with tips such as moving closer, turning on the flash, or laying the tiles flat. It never scores from a photo that failed the quality check.
+- **Partial photo** (tiles cut off or covered) → retake prompt, naming what looks missing.
+- **Photo passes the quality check but some tiles are uncertain** → those tiles are highlighted for the user to confirm or fix before scoring.
+- **Several failed retakes in a row** (e.g. 3) → the app offers manual tile entry so the hand can still be scored.
 - **Wrong number of tiles** (not 14 + kong extras + flowers) → the score is blocked until the tile strip is valid, and the message says what's missing or extra.
 - **Not a winning hand** under the chosen variant → the app explains why (e.g. "no pair found") and offers a manual override (Feature E).
 - **Recognition service errors or times out (e.g. 500, no network)** → the app falls back to manual tile entry immediately. It never blocks scoring. A retry button is offered.
@@ -238,7 +242,7 @@ Presets marked ★ are **on in the Game Night default profile**.
   - If the kong owner wins, the photo/tile scorer leaves out the per-kong fans so the kong isn't paid twice.
   - If the winner **robs an added kong**, the app offers to reverse that kong's payment (the kong was never completed).
   - Deleting or undoing a hand also asks whether to remove the kongs recorded during it.
-- **Multiple winners off the same discard:** **[OPEN]** proposed MVP: one winner per hand; record the second win as a separate hand.
+- **Multiple players call the same discard:** **the first player to call it wins** (house rule; MCR gives it to the next player after the discarder). Only one winner per hand. The app just records whoever the table agrees called first.
 - Balances **always sum to $0**. Store money as integer cents, display 2 decimals, and never let rounding drift break the $0 sum.
 - Long nights (50+ hands) stay fast and readable. History scrolls, newest first.
 
@@ -274,7 +278,11 @@ All Game Night rules are decided ([`GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGH
 
 Variants and house rules are a **rules config (data)** plus test hands, never hard-coded. House-rule presets are config modifiers applied on top of a variant.
 
-### Photo recognition **[OPEN]**
+### Photo recognition (decided: what it must do)
+- **Job:** from one photo of the revealed winning hand, identify **every tile's suit and number, or its symbol** (wind, dragon, flower/season), plus which tiles are melded vs. concealed where the layout shows it. That tile list feeds the scoring engine.
+- **Quality gate first:** before identifying tiles, check for blur, low light and cut-off tiles. If the photo fails, **ask for a retake** rather than guessing.
+- **Accuracy target (proposed, confirm in specs):** ≥ 98% of tiles identified correctly on photos that pass the quality gate, and ≥ 90% of hands needing zero corrections.
+- **How (implementation, decided in the spec phase):**
 - **Option 1 (proposed):** send the photo to a **vision-capable AI model** through a small serverless function, so the API key never sits in the browser. It returns a tile list. **The app's own rules engine does the scoring**, not the AI, so points are deterministic and testable.
 - **Option 2:** an on-device tile-recognition model. No server and no per-photo cost, but much more work up front and less accurate.
 - Either way, the user always reviews the tiles before scoring, and manual entry is always available.
@@ -285,7 +293,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - **One small serverless function** for photo recognition (Vercel / Netlify functions). No database.
 - Persistence goes through a single storage module that wraps `localStorage`.
 - **Scoring, pattern detection, payout, and seat-rotation logic live in pure functions** (`src/engine/`), separate from the UI, with unit tests (Vitest) for every pattern and payout rule.
-- Hosting: Vercel or Netlify, so the static site and the function live together.
+- **Hosting (decided): a shareable web link.** Players open a URL on their phones; no app-store install. Vercel or Netlify (free tier) can serve the site and the photo function together. *Nothing is built or deployed yet.*
 
 ### Design direction **[TBD]**
 - Mobile-first, calm, high-contrast, and readable at arm's length on a table.
@@ -336,7 +344,8 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 **C. Photo scoring**
 - [ ] Taking or uploading a photo shows a tile strip the user can edit.
 - [ ] For at least 10 reference hands entered as tiles (drawn from the MCR rulebook's Appendix 1 examples, whose combinations and exclusions are recorded in `variants/MCR.md` §5, plus hands from the owner's group), the system shows the correct total points and the correct named fan with reasons, applying the non-repeat and other combining rules.
-- [ ] For the reference photo set, recognized tiles match the real hand for at least **[OPEN]** % of photos. (This check is the accuracy target for the recognition approach.)
+- [ ] For the reference photo set, at least 98% of tiles are identified correctly (suit + number/symbol), and at least 90% of hands need no correction.
+- [ ] A deliberately blurry photo and a deliberately dark photo are both rejected with a retake prompt, and no score is shown.
 - [ ] If recognition fails or times out, the manual tile entry opens and scoring can still be completed.
 - [ ] Cancel leaves balances and history unchanged.
 
@@ -358,7 +367,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 
 ## 9. Success metrics (for iteration)
 - Time from "Score a win" to "Confirm" is **under 30 seconds** for a typical hand (photo path).
-- **At least 80% of photos** need zero or one tile correction.
+- **At least 90% of photos** need zero tile corrections, and fewer than 1 in 5 photos needs a retake.
 - **Zero rulebook lookups** for scoring during a test night.
 - Final settlement takes **under 1 minute** with no disputes.
 - The group chooses to use it again the following game night.

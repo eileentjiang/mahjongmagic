@@ -25,6 +25,7 @@
 | **Seats between rounds** | Players **stay in their chairs**. Only the dice and seat winds move | Players physically swap seats (App. 4) |
 | **False win penalty** | None (available as a preset) | 10–20 points to each player |
 | **Both full flower sets (all 8)** | +2 per set (+4 total), nothing extra | n/a |
+| **Two players call the same discard** | **The first to call wins** | The next player after the discarder wins |
 | **Point cap** | None | None |
 
 ### 1a. Kong payments (paid on the spot)
