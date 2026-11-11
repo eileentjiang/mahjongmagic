@@ -59,7 +59,7 @@ Hard constraints:
 - Every confirmed action persists immediately; with storage blocked, the app still works and says the night won't be saved.
 - Domain vocabulary, used the same in code and UI: night → wind round → hand; seat wind; table (prevailing) wind; dealer; flower number; self-draw; discard; payout scale.
 
-Photo scoring must identify every tile's suit and number/symbol, and reject blurry or dark photos with a retake prompt. When two players call the same discard, the first caller wins. Open decisions (from the PRD): how a substitute's balance carries (TBD); the recognition implementation (accuracy target: 100%, with recognized tiles always shown for a quick confirm or fix); public vs. private repo for GitHub Pages.
+Photo scoring must identify every tile's suit and number/symbol, and reject blurry or dark photos with a retake prompt. When two players call the same discard, the first caller wins. Open decisions (from the PRD): how a substitute's balance carries (TBD); the recognition implementation (accuracy target: 100%; confirmation is asked only when recognition is unsure; the photo proxy is invisible to players, who only ever use one link); public vs. private repo for GitHub Pages.
 
 ## Brand Commitments
 

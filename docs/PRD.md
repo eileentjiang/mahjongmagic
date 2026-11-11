@@ -4,6 +4,7 @@
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.7.2: Confirmation is shown **only when recognition is unsure**; confident reads go straight to the score. The photo proxy is invisible to players: one link, one app.
 > - v0.7.1: Hosting on **GitHub Pages**, with the photo-recognition call going through a tiny separate proxy (Pages can't keep an API key secret). Accuracy target raised to **100%**, with the recognized tiles always shown for a quick confirm or fix.
 > - v0.7: Photo recognition must identify every tile's suit and number/symbol, and **blurry or low-light photos are rejected with a retake prompt** before scoring. When two players call the same discard, **the first to call wins**. Hosting: **a shareable web link**. Substitute balances remain TBD.
 > - v0.6: All Game Night rules settled. All three players pay each kong equally; Three/Four Kongs still score; Chicken Hand needs no flowers at all; no dealer bonus; seats stay put; no false-win penalty.
@@ -114,7 +115,7 @@ Presets marked ★ are **on in the Game Night default profile**.
 ### Feature C: Take a picture of the winning hand
 **[User takes a picture of the winning hand]** → **[System shows the point value and the reasons behind it, using the variant's fan names (e.g. "No Honors, 1 pt", "All Chows, 2 pts", "Mixed Double Chow, 1 pt", "Half Flush, 6 pts"), plus the payout preview.]**
 1. The user photographs the revealed hand, including melded sets and flowers.
-2. The system identifies each tile and shows them as a **tile strip the user can check and correct** (tap a tile to change it, add a missing one, or remove one).
+2. The system identifies each tile and shows them as a **tile strip** next to the score (tap a tile to change it, add a missing one, or remove one). It **only stops to ask for confirmation when it's unsure** about a tile; confident reads go straight to the score.
 3. The user confirms: **who won**, **self-draw or discard (from whom)**, and any context a photo can't show (e.g. won on the last tile, robbed a kong). Seat and round wind are filled in from Feature D.
 4. The system shows the **total points**, a **line-by-line breakdown of each scoring pattern** with a plain-language reason, and **what each player pays or receives**.
 5. **Confirm** sends the hand to the ledger (Feature B). **Cancel** changes nothing.
@@ -178,7 +179,7 @@ Presets marked ★ are **on in the Game Night default profile**.
 ### 5.3 Scoring: calculate, track, and show to everyone
 1. When someone wins, any player taps **"Score a win"**.
 2. They **take a photo** of the winning hand (or tap **"Enter tiles manually"**).
-3. They **check the recognized tiles** and fix any mistakes.
+3. If the app is unsure about any tile, it **flashes what it picked up** and asks the user to confirm or fix the highlighted tiles. If it's confident, this step is skipped.
 4. They choose **who won** and **self-draw / discard (from whom)**, and tick any extra conditions.
 5. The system shows **total points + the reason for each pattern + each player's +/−$**.
 6. **Confirm** updates the ledger: balances animate to their new values and the **standings banner** shows the new ranking. The deal advances or stays, and seat winds and flower #s update (and the app announces "New flower numbers!" when they change).
@@ -283,7 +284,8 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - **Job:** from one photo of the revealed winning hand, identify **every tile's suit and number, or its symbol** (wind, dragon, flower/season), plus which tiles are melded vs. concealed where the layout shows it. That tile list feeds the scoring engine.
 - **Quality gate first:** before identifying tiles, check for blur, low light and cut-off tiles. If the photo fails, **ask for a retake** rather than guessing.
 - **Accuracy target: 100%** of tiles identified correctly on photos that pass the quality gate.
-- **Safety net:** after every photo, the app briefly **shows the tiles it picked up** ("Here's what I see") with one tap to confirm, or tap a tile to fix it. A misread tile changes the points and the money, so the confirm step is always shown, but it's built to take about a second when everything is right.
+- **Least friction:** when recognition is confident about every tile, the app **goes straight to the score**. The recognized tiles are still shown alongside the score breakdown, so anyone can tap a tile to fix it before confirming the hand.
+- **Only when unsure:** if any tile is uncertain, the app **flashes what it picked up**, highlights the uncertain tiles, and asks the user to confirm or change them before scoring.
 - **How (implementation, decided in the spec phase):**
 - **Option 1 (proposed):** send the photo to a **vision-capable AI model** through a **tiny proxy** (e.g. a free Cloudflare Worker), so the API key never sits in the browser or the public GitHub repo. It returns a tile list. **The app's own rules engine does the scoring**, not the AI, so points are deterministic and testable.
 - **Option 2:** an on-device tile-recognition model. No server and no per-photo cost, but much more work up front and less accurate.
@@ -296,7 +298,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - Persistence goes through a single storage module that wraps `localStorage`.
 - **Scoring, pattern detection, payout, and seat-rotation logic live in pure functions** (`src/engine/`), separate from the UI, with unit tests (Vitest) for every pattern and payout rule.
 - **Hosting (decided): GitHub Pages**, a shareable web link (e.g. `<username>.github.io/mahjongmagic`). Players open it on their phones; no app-store install. It deploys automatically from the repo.
-  - GitHub Pages only serves static files and can't hide a secret, so the photo-recognition API key lives in the separate proxy above.
+  - GitHub Pages only serves static files and can't hide a secret, so the photo-recognition API key lives in the separate proxy above. **The proxy is invisible to players:** they only ever use the one link, with no extra sites, accounts or sign-ins. The app calls the proxy behind the scenes. Setting it up is a one-time job for the owner/developer.
   - GitHub Pages on a **private** repo needs a paid GitHub plan; a public repo is free. **[OPEN]** Keep the repo public, or upgrade?
   - *Nothing is built or deployed yet.*
 
@@ -350,7 +352,9 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] Taking or uploading a photo shows a tile strip the user can edit.
 - [ ] For at least 10 reference hands entered as tiles (drawn from the MCR rulebook's Appendix 1 examples, whose combinations and exclusions are recorded in `variants/MCR.md` §5, plus hands from the owner's group), the system shows the correct total points and the correct named fan with reasons, applying the non-repeat and other combining rules.
 - [ ] For the reference photo set, 100% of tiles are identified correctly (suit + number/symbol).
-- [ ] After every photo, the recognized tiles are shown for confirmation, and tapping a tile lets the user change it before scoring.
+- [ ] A photo recognized with full confidence goes straight to the score with no confirmation step. A photo with any uncertain tile shows the recognized tiles with the uncertain ones highlighted, and asks for confirmation first.
+- [ ] In both cases, tapping a tile lets the user change it before the hand is confirmed.
+- [ ] Players never leave the GitHub Pages link or sign in anywhere to use photo scoring.
 - [ ] A deliberately blurry photo and a deliberately dark photo are both rejected with a retake prompt, and no score is shown.
 - [ ] If recognition fails or times out, the manual tile entry opens and scoring can still be completed.
 - [ ] Cancel leaves balances and history unchanged.
