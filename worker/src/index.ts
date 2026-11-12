@@ -14,7 +14,8 @@ export interface Env {
   ROOMS: DurableObjectNamespace<SessionRoom>;
 }
 
-const MODEL = 'claude-opus-5-5';
+// Sonnet 5.5 at low effort: about a quarter of the cost of Opus 5.5 at medium (owner's choice, to keep photos cheap).
+const MODEL = 'claude-sonnet-5-5';
 const ALLOWED_ORIGINS = [
   'https://eileentjiang.github.io',
   'http://localhost:5173',
@@ -122,7 +123,7 @@ async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.Content
   const response = await client.messages.parse({
     model: MODEL,
     max_tokens: 16000,
-    output_config: { effort: 'medium', format: zodOutputFormat(schema) },
+    output_config: { effort: 'low', format: zodOutputFormat(schema) },
     messages: [{ role: 'user', content }],
   });
   if (response.stop_reason === 'refusal') throw new UserError(declined);

@@ -85,3 +85,6 @@ h2 { margin: 0; font-size: 18px; font-weight: 700; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
 .tag-house { border-color: var(--line); background: var(--panel); }
+.tile-flag { position: relative; display: inline-flex; border-radius: 8px; }
+.tile-flag-current { box-shadow: 0 0 0 3px var(--ground), 0 0 0 6px var(--walnut); }
+.tile-flag-badge { position: absolute; top: -9px; right: -9px; width: 20px; height: 20px; border-radius: 50%; background: var(--walnut); color: var(--ground); font-size: 13px; font-weight: 700; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px var(--ground); }
