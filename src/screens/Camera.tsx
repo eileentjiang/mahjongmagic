@@ -178,7 +178,7 @@ function useLiveCamera() {
     let sw = (guide.w + 2 * m) / scale, sh = (guide.h + 2 * m) / scale;
     sx = Math.max(0, sx); sy = Math.max(0, sy);
     sw = Math.min(v.videoWidth - sx, sw); sh = Math.min(v.videoHeight - sy, sh);
-    const out = Math.min(1, 1280 / Math.max(sw, sh));
+    const out = Math.min(1, 1024 / Math.max(sw, sh));
     const c = document.createElement('canvas');
     c.width = Math.round(sw * out); c.height = Math.round(sh * out);
     c.getContext('2d')!.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
