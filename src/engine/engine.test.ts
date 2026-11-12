@@ -148,3 +148,18 @@ describe('custom house rules', () => {
     expect(c.reduce((a, b) => a + b, 0)).toBe(0);
   });
 });
+
+describe('four of a tile is not always a kong', () => {
+  it('1-2-3 plus a pung of 2s is a complete 14-tile hand', () => {
+    const hand = t('p1 p2 p3 p2 p2 p2 m4 m5 m6 s7 s8 s9 dr dr');
+    const r = scoreHand({ tiles: hand, flowers: [], ...ctx() }, PURE_MCR);
+    expect(r.valid).toBe(true);
+    expect(names(r)).toContain('Tile Hog');
+    expect(names(r)).not.toContain('Melded Kong');
+  });
+  it('the same four 2s as a real kong needs the 15th tile', () => {
+    const r = scoreHand({ tiles: t('p2 p2 p2 p2 p5 p6 p7 m4 m5 m6 s7 s8 s9 dr dr'), flowers: [], ...ctx() }, PURE_MCR);
+    expect(r.valid).toBe(true);
+    expect(names(r)).toContain('Melded Kong');
+  });
+});

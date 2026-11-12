@@ -20,8 +20,8 @@ export function Rules({ session = false }: { session?: boolean }) {
   const step = scale < 10 ? 1 : scale < 50 ? 5 : 25;
   const tuned = !PRESETS.some((p) => p.is(rules));
 
-  const next = () => {
-    if (session) { store.changeRules(rules); nav.back(); return; }
+  const next = async () => {
+    if (session) { if (await store.changeRules(rules)) nav.back(); return; }
     store.update((d) => ({ ...d, setup: d.setup ? { ...d.setup, rules } : d.setup }));
     nav.go('players');
   };
@@ -73,7 +73,9 @@ export function Rules({ session = false }: { session?: boolean }) {
       </div>
       <footer className="footer">
         {session && <p className="muted" style={{ margin: 0, fontSize: 13, textAlign: 'center' }}>Changes apply from the next game on. Games already played keep their scores.</p>}
-        <button type="button" className="btn btn-primary" onClick={next}>{session ? 'Save changes' : 'Next: players'}</button>
+        {session && !store.canEdit
+          ? <p style={{ margin: 0, fontSize: 14, fontWeight: 600, textAlign: 'center' }}>Only the phone that started the session can change the rules.</p>
+          : <button type="button" className="btn btn-primary" onClick={next}>{session ? 'Save changes' : 'Next: players'}</button>}
       </footer>
     </div>
   );

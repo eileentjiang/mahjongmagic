@@ -23,7 +23,7 @@ export function Camera() {
         setPhase({ kind: 'rejected', title: TITLES[r.quality] ?? 'Couldn’t read the tiles', detail: r.problem ?? 'Nothing was scored. Try again.' });
         return;
       }
-      const draft = newDraft(store.draft?.winner ?? -1);
+      const draft = newDraft(store.draft?.winner ?? store.mySeat ?? -1);
       draft.tiles = r.tiles.map((t) => t.tile);
       draft.flowers = [...new Set(r.flowers.map((f) => f.tile))];
       draft.unsure = r.tiles.map((t, i) => ({ index: i, alternatives: t.alternatives, sure: t.sure })).filter((t) => !t.sure).map(({ index, alternatives }) => ({ index, alternatives }));

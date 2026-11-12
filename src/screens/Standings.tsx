@@ -4,6 +4,7 @@ import { SessionEvent } from '../engine/session';
 import { WIND_ZH, WINDS } from '../engine/tiles';
 import { Header, PLAYER_COLORS, TabBar } from '../components/ui';
 import { useNav, useStore } from '../state/store';
+import { deviceId } from '../state/sync';
 
 export function eventLine(players: string[], e: SessionEvent, n: number): { title: string; detail: string; amt: string } | null {
   if (e.type === 'game') {
@@ -60,7 +61,7 @@ export function Standings() {
         </section>
         <button type="button" className="btn" onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>
       </div>
-      <TabBar current="standings" />
+      <TabBar current="standings" locked={!!store.current?.shared && !!store.room?.lock && store.room.lock.device !== deviceId()} />
     </div>
   );
 }

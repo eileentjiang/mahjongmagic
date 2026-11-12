@@ -34,9 +34,12 @@ export function Score() {
   const canConfirm = !!result?.valid && methodOk && (!below || override) && points > 0;
   const nextDealer = st.rules.dealerKeepsDealOnWin && winner === st.dealer ? st.dealer : (st.dealer + 1) % 4;
 
-  const confirm = () => {
-    store.confirmGame({ points, fans, edited, discarderOnlyPoints: Math.min(discarderOnlyPoints, points) });
-    nav.reset('table');
+  const [saving, setSaving] = useState(false);
+  const confirm = async () => {
+    setSaving(true);
+    const ok = await store.confirmGame({ points, fans, edited, discarderOnlyPoints: Math.min(discarderOnlyPoints, points) });
+    setSaving(false);
+    if (ok) nav.reset('table');
   };
 
   return (
@@ -44,7 +47,7 @@ export function Score() {
       <Header title={`Score game ${st.gameNumber}`} />
       <div className="body" style={{ gap: 18 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <span className="label">Who won?</span>
+          <span className="label">Who won?{store.mySeat !== null ? ' (you, by default)' : ''}</span>
           <PlayerChips names={s.players} selected={winner >= 0 ? winner : null} onPick={(i) => set({ winner: i, discarder: draft.discarder === i ? null : draft.discarder, removed: [] })} />
         </div>
         <div className="seg" role="group" aria-label="How they won" style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -139,7 +142,7 @@ export function Score() {
         )}
       </div>
       <footer className="footer">
-        <button type="button" className="btn btn-primary" disabled={!canConfirm} onClick={confirm}>Confirm game</button>
+        <button type="button" className="btn btn-primary" disabled={!canConfirm || saving} onClick={confirm}>{saving ? 'Saving…' : 'Confirm game'}</button>
       </footer>
     </div>
   );
