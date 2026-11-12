@@ -8,7 +8,7 @@ export function About() {
         <div className="row" style={{ gap: 14 }}>
           <img src="./eileen.jpg" alt="Eileen on the subway, smiling" width={96} height={96} style={{ width: 96, height: 96, objectFit: 'cover', border: '1px solid var(--line)', flexShrink: 0 }} />
           <h2 style={{ fontSize: 20, lineHeight: 1.3 }}>
-            Hi! I’m Eileen, the creator of Mahjong{' '}
+            Hi! I’m Eileen, the<br />creator of Mahjong{' '}
             <span style={{ whiteSpace: 'nowrap' }}>
               Magic.
               {/* The seal follows "Magic." on any screen width without changing the line height. */}
