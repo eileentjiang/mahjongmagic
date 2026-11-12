@@ -2,7 +2,7 @@ import type { CustomRule, RuleClause } from './engine/customRule';
 import type { TileId } from './engine/tiles';
 
 /** The photo server (Cloudflare Worker). It holds the API key; this app never does. */
-export const SERVER = 'https://mahjong-magic.eileentjiang.workers.dev';
+export const SERVER: string = import.meta.env.VITE_SERVER ?? 'https://mahjong-magic.eileentjiang.workers.dev';
 
 export interface Recognition {
   quality: 'ok' | 'blurry' | 'dark' | 'partial' | 'no_tiles';

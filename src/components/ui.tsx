@@ -16,6 +16,7 @@ export const Icon = {
   shuffle: () => <svg {...svg} width={20} height={20}><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" /></svg>,
   up: () => <svg {...svg} width={20} height={20}><path d="M6 15l6-6 6 6" /></svg>,
   arrow: () => <svg {...svg} width={20} height={20}><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
+  invite: () => <svg {...svg}><path d="M16 11a4 4 0 1 0-8 0M12 15c-4 0-7 2-7 5M19 8v6M16 11h6" /></svg>,
   share: () => <svg {...svg} width={20} height={20}><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6" /></svg>,
 };
 
@@ -70,13 +71,13 @@ export function PlayerChips({ names, selected, onPick, exclude = [], cols = 4 }:
   );
 }
 
-export function TabBar({ current }: { current: Route }) {
+export function TabBar({ current, locked = false }: { current: Route; locked?: boolean }) {
   const nav = useNav();
   const go = (r: Route) => { if (current !== r) (current === 'table' ? nav.go(r) : r === 'table' ? nav.back() : nav.go(r)); };
   return (
     <nav className="tabbar" aria-label="Session">
       <button type="button" className="tab" aria-current={current === 'table' ? 'page' : undefined} onClick={() => go('table')}><Icon.grid />Table</button>
-      <button type="button" className="tab tab-score" onClick={() => nav.go('camera')}>
+      <button type="button" className="tab tab-score" disabled={locked} aria-disabled={locked} style={locked ? { opacity: 0.45 } : undefined} onClick={() => nav.go('camera')}>
         <span className="box"><Icon.camera /></span>Score a win
       </button>
       <button type="button" className="tab" aria-current={current === 'standings' ? 'page' : undefined} onClick={() => go('standings')}><Icon.list />Standings</button>

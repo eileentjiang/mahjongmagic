@@ -33,13 +33,9 @@ export function Players({ session = false }: { session?: boolean }) {
     for (let i = p.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
     setPlayers(p);
   };
-  const finish = () => {
+  const finish = async () => {
     if (session) {
-      store.update((d) => ({ ...d, sessions: d.sessions.map((s) => s.id === d.currentId ? {
-        ...s, name: name.trim() || s.name, players: players.map((p, i) => p.trim() || s.players[i]),
-        events: dealer !== table!.dealer || wind !== table!.tableWind ? [...s.events, { type: 'override' as const, at: Date.now(), dealer, tableWind: wind }] : s.events,
-      } : s) }));
-      nav.back();
+      if (await store.saveSeating({ name, players, dealer, tableWind: wind })) nav.back();
       return;
     }
     store.update((d) => ({ ...d, setup: { ...d.setup!, name, players, saveProfile } }));
@@ -98,7 +94,9 @@ export function Players({ session = false }: { session?: boolean }) {
         )}
       </div>
       <footer className="footer">
-        <button type="button" className="btn btn-primary" onClick={finish}>{session ? 'Save changes' : 'Start session'}</button>
+        {session && !store.canEdit
+          ? <p style={{ margin: 0, fontSize: 14, fontWeight: 600, textAlign: 'center' }}>Only the phone that started the session can change seats and names.</p>
+          : <button type="button" className="btn btn-primary" onClick={finish}>{session ? 'Save changes' : 'Start session'}</button>}
         {!session && (
           <label className="row" style={{ justifyContent: 'center', gap: 8, minHeight: 44, fontSize: 14, fontWeight: 500 }}>
             <input type="checkbox" checked={saveProfile} onChange={(e) => setSaveProfile(e.target.checked)} style={{ width: 20, height: 20, margin: 0, accentColor: 'var(--walnut)' }} />

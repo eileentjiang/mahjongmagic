@@ -6,8 +6,12 @@ import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 
+import { DurableObject } from 'cloudflare:workers';
+import { apply, expireLock, newRoom, Op, RoomSession, RoomState } from './room';
+
 export interface Env {
   ANTHROPIC_API_KEY: string;
+  ROOMS: DurableObjectNamespace<SessionRoom>;
 }
 
 const MODEL = 'claude-opus-5-5';
@@ -128,13 +132,101 @@ async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.Content
 
 class UserError extends Error {}
 
+// ---------- Shared sessions
+const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVWXYZ'; // no I, O or Q: easy to read aloud and type
+
+async function createRoom(request: Request, env: Env, origin: string | null): Promise<Response> {
+  const body = (await request.json().catch(() => null)) as { session?: RoomSession; device?: string; seat?: number | null } | null;
+  if (!body?.session || typeof body.device !== 'string' || !Array.isArray(body.session.players) || body.session.players.length !== 4)
+    return json({ error: 'Missing session' }, 400, origin);
+  if (JSON.stringify(body.session).length > 1_500_000) return json({ error: 'This session is too long to share.' }, 413, origin);
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const code = Array.from({ length: 4 }, () => CODE_LETTERS[Math.floor(Math.random() * CODE_LETTERS.length)]).join('');
+    const res = await env.ROOMS.get(env.ROOMS.idFromName(code)).fetch('https://room/init', {
+      method: 'POST', body: JSON.stringify({ code, session: body.session, device: body.device, seat: body.seat ?? null }),
+    });
+    if (res.status === 200) return json({ code }, 200, origin);
+  }
+  return json({ error: 'Couldn’t create a code. Try again.' }, 503, origin);
+}
+
+/** One shared session. Holds the authoritative copy and relays every change to every phone. */
+export class SessionRoom extends DurableObject<Env> {
+  private async load(): Promise<RoomState | undefined> { return this.ctx.storage.get<RoomState>('state'); }
+
+  private devices(): Set<string> {
+    return new Set(this.ctx.getWebSockets().map((w) => (w.deserializeAttachment() as { device: string }).device));
+  }
+
+  private broadcast(state: RoomState) {
+    const msg = JSON.stringify({ type: 'state', state });
+    for (const w of this.ctx.getWebSockets()) { try { w.send(msg); } catch { /* closed */ } }
+  }
+
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === '/init') {
+      if (await this.load()) return new Response('taken', { status: 409 });
+      const b = (await request.json()) as { code: string; session: RoomSession; device: string; seat: number | null };
+      await this.ctx.storage.put('state', newRoom(b.code, { ...b.session, events: b.session.events ?? [] }, b.device, b.seat));
+      return new Response('ok');
+    }
+    const device = url.searchParams.get('device') ?? '';
+    const state = await this.load();
+    if (!state) return new Response(JSON.stringify({ error: 'No session with that code.' }), { status: 404 });
+    if (!/^[a-z0-9]{6,32}$/i.test(device)) return new Response('bad device', { status: 400 });
+    const pair = new WebSocketPair();
+    const [client, server] = [pair[0], pair[1]];
+    this.ctx.acceptWebSocket(server);
+    server.serializeAttachment({ device });
+    server.send(JSON.stringify({ type: 'state', state }));
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    if (typeof message !== 'string' || message.length > 300_000) return;
+    const { device } = ws.deserializeAttachment() as { device: string };
+    let op: Op & { id?: string };
+    try { op = JSON.parse(message); } catch { return; }
+    let state = await this.load();
+    if (!state) return;
+    state = expireLock(state, Date.now(), this.devices());
+    const res = apply(state, device, op, Date.now());
+    if (!res.ok) { ws.send(JSON.stringify({ type: 'error', id: op.id, error: res.error, state })); return; }
+    if (res.state !== state || res.state.version !== state.version) {
+      await this.ctx.storage.put('state', res.state);
+      this.broadcast(res.state);
+    }
+    ws.send(JSON.stringify({ type: 'ack', id: op.id }));
+  }
+
+  async webSocketClose(ws: WebSocket) {
+    const { device } = ws.deserializeAttachment() as { device: string };
+    const state = await this.load();
+    if (!state?.lock || state.lock.device !== device) return;
+    const stillHere = this.ctx.getWebSockets().some((w) => w !== ws && (w.deserializeAttachment() as { device: string }).device === device);
+    if (stillHere) return;
+    const next = { ...state, lock: null, version: state.version + 1 };
+    await this.ctx.storage.put('state', next);
+    this.broadcast(next);
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (!origin || !ALLOWED_ORIGINS.includes(origin)) return json({ error: 'Not allowed' }, 403, origin);
-    if (request.method !== 'POST') return json({ error: 'Use POST' }, 405, origin);
     const path = new URL(request.url).pathname;
+
+    // Shared sessions: GET /session/ABCD/ws?device=… opens a live connection to that room.
+    const ws = path.match(/^\/session\/([A-Z]{4})\/ws$/);
+    if (ws && request.headers.get('Upgrade') === 'websocket') {
+      return env.ROOMS.get(env.ROOMS.idFromName(ws[1])).fetch(request);
+    }
+    if (path === '/session' && request.method === 'POST') return createRoom(request, env, origin);
+
+    if (request.method !== 'POST') return json({ error: 'Use POST' }, 405, origin);
 
     try {
       const body = (await request.json()) as { image?: unknown; text?: unknown };

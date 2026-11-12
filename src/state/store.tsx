@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createRoom, deviceId, Op, RoomConnection, RoomState, Status } from './sync';
 import { HOUSE_DEFAULT, RuleSet } from '../engine/rules';
 import { newId, replay, Session, SessionEvent, TableState } from '../engine/session';
 import { TileId } from '../engine/tiles';
@@ -54,12 +55,28 @@ export interface Store extends Persisted {
   startSetup: (from?: Profile) => void;
   startSession: () => void;
   addEvent: (e: SessionEvent) => void;
-  recordKong: (owner: number, kind: KongKind) => void;
-  recordDraw: () => void;
-  confirmGame: (r: { points: number; fans: FanHit[]; edited: boolean; discarderOnlyPoints: number }) => void;
-  changeRules: (rules: RuleSet) => void;
+  recordKong: (owner: number, kind: KongKind) => Promise<void>;
+  recordDraw: () => Promise<void>;
+  confirmGame: (r: { points: number; fans: FanHit[]; edited: boolean; discarderOnlyPoints: number }) => Promise<boolean>;
+  changeRules: (rules: RuleSet) => Promise<boolean>;
+  saveSeating: (p: { name: string; players: string[]; dealer: number; tableWind: number }) => Promise<boolean>;
   finishSession: (keep: boolean) => void;
   saveProfile: (s: Session) => void;
+  // ---- Shared sessions
+  room: RoomState | null;
+  status: Status | null;
+  /** This phone's seat in a shared session (null: not shared, or watching). */
+  mySeat: number | null;
+  /** True when this phone may change rules and seating (always true when not shared). */
+  canEdit: boolean;
+  notice: string | null;
+  setNotice: (n: string | null) => void;
+  startSharing: (seat: number | null) => Promise<boolean>;
+  joinCode: string | null;
+  join: (code: string | null) => void;
+  claimSeat: (seat: number | null) => Promise<boolean>;
+  lockScoring: () => Promise<boolean>;
+  unlockScoring: () => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -79,6 +96,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const withCurrent = useCallback((fn: (s: Session) => Session) =>
     setData((d) => ({ ...d, sessions: d.sessions.map((s) => (s.id === d.currentId ? fn(s) : s)) })), []);
+
+  // ---------- Live sharing
+  const [room, setRoom] = useState<RoomState | null>(null);
+  const roomRef = useRef<RoomState | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [joinCode, setJoinCode] = useState<string | null>(null);
+  const conn = useRef<RoomConnection | null>(null);
+  const code = current?.shared && !current.finished ? current.shared.code : joinCode;
+  useEffect(() => {
+    if (!code) { setRoom(null); roomRef.current = null; setStatus(null); return; }
+    const c = new RoomConnection(code, (st) => {
+      roomRef.current = st;
+      setRoom(st);
+      // The server's copy wins: keep the local session in step with it.
+      setData((d) => ({ ...d, sessions: d.sessions.map((x) => (x.shared?.code === st.code ? { ...x, ...st.session, shared: x.shared } : x)) }));
+    }, setStatus);
+    conn.current = c;
+    return () => { c.close(); conn.current = null; };
+  }, [code]);
+  const me = deviceId();
+  const shared = !!current?.shared;
+  const mySeatRaw = room && shared ? room.seats.indexOf(me) : -1;
+  const send = async (op: Op): Promise<boolean> => {
+    if (!conn.current) { setNotice('Not connected to the shared session.'); return false; }
+    try { await conn.current.send(op); return true; } catch (e) { setNotice((e as Error).message); return false; }
+  };
+  /** Record an event: through the server when shared, on this phone otherwise. */
+  const commit = async (e: SessionEvent): Promise<boolean> => {
+    if (!shared) { withCurrent((s) => ({ ...s, events: [...s.events, e] })); return true; }
+    return send({ op: 'append', event: e, expectedGames: table?.gamesPlayed ?? 0 });
+  };
 
   const store: Store = {
     ...data, storageOk, current, table, update,
@@ -102,36 +151,77 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const profiles = d.setup.saveProfile ? upsertProfile(d.profiles, s) : d.profiles;
       return { ...d, sessions: [s, ...d.sessions], currentId: s.id, lastRules: d.setup.rules, setup: null, draft: null, profiles };
     }),
-    addEvent: (e) => withCurrent((s) => ({ ...s, events: [...s.events, e] })),
-    recordKong: (owner, kind) => {
+    addEvent: (e) => { void commit(e); },
+    recordKong: async (owner, kind) => {
       if (!table) return;
-      withCurrent((s) => ({ ...s, events: [...s.events, { type: 'kong', at: Date.now(), owner, kind, cents: kongPayout(kind, table.rules, owner) }] }));
+      await commit({ type: 'kong', at: Date.now(), owner, kind, cents: kongPayout(kind, table.rules, owner) });
     },
-    recordDraw: () => withCurrent((s) => ({ ...s, events: [...s.events, { type: 'draw', at: Date.now() }] })),
-    confirmGame: ({ points, fans, edited, discarderOnlyPoints }) => {
+    recordDraw: async () => { await commit({ type: 'draw', at: Date.now() }); },
+    confirmGame: async ({ points, fans, edited, discarderOnlyPoints }) => {
       const dr = data.draft;
-      if (!dr || !table) return;
+      if (!dr || !table) return false;
       const discarder = dr.selfDraw ? null : dr.discarder;
+      const ok = await commit({
+        type: 'game', at: Date.now(), winner: dr.winner, discarder, tiles: dr.tiles, flowers: dr.flowers,
+        concealed: dr.concealed, points, fans, edited, cents: winPayout(points, table.rules, dr.winner, discarder, discarderOnlyPoints),
+      });
+      if (ok) setData((d) => ({ ...d, draft: null }));
+      return ok;
+    },
+    changeRules: (rules) => commit({ type: 'rules', at: Date.now(), rules }),
+    saveSeating: async ({ name, players, dealer, tableWind }) => {
+      if (!current || !table) return false;
+      const moved = dealer !== table.dealer || tableWind !== table.tableWind;
+      if (shared) {
+        if (!(await send({ op: 'meta', name, players }))) return false;
+        return moved ? commit({ type: 'override', at: Date.now(), dealer, tableWind }) : true;
+      }
+      withCurrent((s) => ({ ...s, name: name.trim() || s.name, players: players.map((p, i) => p.trim() || s.players[i]) }));
+      return moved ? commit({ type: 'override', at: Date.now(), dealer, tableWind }) : true;
+    },
+    finishSession: (keep) => {
+      if (shared && !keep) void send({ op: 'finish', finished: true });
       setData((d) => ({
         ...d,
+        currentId: keep ? d.currentId : null,
         draft: null,
-        sessions: d.sessions.map((s) => s.id !== d.currentId ? s : {
-          ...s,
-          events: [...s.events, {
-            type: 'game', at: Date.now(), winner: dr.winner, discarder, tiles: dr.tiles, flowers: dr.flowers,
-            concealed: dr.concealed, points, fans, edited, cents: winPayout(points, table.rules, dr.winner, discarder, discarderOnlyPoints),
-          }],
-        }),
+        sessions: d.sessions.map((s) => (s.id === d.currentId ? { ...s, finished: !keep } : s)),
       }));
     },
-    changeRules: (rules) => withCurrent((s) => ({ ...s, events: [...s.events, { type: 'rules', at: Date.now(), rules }] })),
-    finishSession: (keep) => setData((d) => ({
-      ...d,
-      currentId: keep ? d.currentId : null,
-      draft: null,
-      sessions: d.sessions.map((s) => (s.id === d.currentId ? { ...s, finished: !keep } : s)),
-    })),
     saveProfile: (s) => setData((d) => ({ ...d, profiles: upsertProfile(d.profiles, s) })),
+    room: shared || joinCode ? room : null,
+    status: shared || joinCode ? status : null,
+    mySeat: mySeatRaw >= 0 ? mySeatRaw : null,
+    canEdit: !shared || room?.host === me,
+    notice, setNotice,
+    startSharing: async (seat) => {
+      if (!current) return false;
+      try {
+        const c = await createRoom(current, seat);
+        withCurrent((s) => ({ ...s, shared: { code: c } }));
+        return true;
+      } catch (e) { setNotice((e as Error).message); return false; }
+    },
+    joinCode,
+    join: (c) => setJoinCode(c ? c.toUpperCase() : null),
+    claimSeat: async (seat) => {
+      if (!(await send({ op: 'claim', seat }))) return false;
+      const st = roomRef.current;
+      if (joinCode && st) {
+        setData((d) => {
+          const existing = d.sessions.find((x) => x.shared?.code === st.code);
+          const local: Session = { ...(st.session as Session), shared: { code: st.code } };
+          return {
+            ...d, currentId: existing?.id ?? local.id, draft: null,
+            sessions: existing ? d.sessions.map((x) => (x === existing ? { ...x, ...local } : x)) : [local, ...d.sessions],
+          };
+        });
+        setJoinCode(null);
+      }
+      return true;
+    },
+    lockScoring: async () => (shared ? send({ op: 'lock' }) : true),
+    unlockScoring: () => { if (shared && room?.lock?.device === me) void send({ op: 'unlock' }); },
   };
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }
@@ -150,9 +240,9 @@ export function useStore(): Store {
 
 // ---------- Navigation: a stack mirrored into browser history, so ← and the phone's back gesture agree.
 export type Route =
-  | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about'
+  | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about' | 'join' | 'claim'
   | 'rulesEdit' | 'playersEdit';
-export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | 'rulesFine' | null;
+export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | 'rulesFine' | 'invite' | null;
 
 interface NavState { stack: Route[]; sheet: SheetName; sheetArg: number }
 interface Nav extends NavState {

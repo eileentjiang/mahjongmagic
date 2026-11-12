@@ -48,6 +48,7 @@ export function Home() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button type="button" className={cur ? 'btn' : 'btn btn-primary'} onClick={start}>Start a new session</button>
+        <button type="button" className="btn" onClick={() => nav.go('join')}>Join a session</button>
         <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button type="button" className="link-btn muted" style={{ fontSize: 13, fontWeight: 500, textDecoration: 'underline' }} onClick={() => nav.go('about')}>About Mahjong Magic</button>
           <span className="muted" style={{ fontSize: 12 }}>© Eileen Jiang</span>

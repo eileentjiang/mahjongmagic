@@ -31,6 +31,8 @@ export interface Session {
   rules: RuleSet;
   events: SessionEvent[];
   finished: boolean;
+  /** Set when this session is shared live; the server holds the authoritative copy. */
+  shared?: { code: string };
 }
 
 export interface TableState {

@@ -4,6 +4,7 @@ import { WIND_NAME, WIND_ZH } from '../engine/tiles';
 import { Icon, PLAYER_COLORS, TabBar } from '../components/ui';
 import { useNav, useStore } from '../state/store';
 import { Tile } from '../components/Tile';
+import { deviceId } from '../state/sync';
 
 const ROUND = ['East', 'South', 'West', 'North'];
 const ROUND_ZH = ['東', '南', '西', '北'];
@@ -20,6 +21,9 @@ export function Table() {
   const nav = useNav();
   const s = store.current!, st = store.table!;
   const order = [0, 1, 3, 2]; // grid reads East South / North West like the real table
+  const lock = store.room?.lock;
+  const lockedBy = s.shared && lock && lock.device !== deviceId() ? lock.seat ?? -1 : null;
+  // In a shared session you open only your own seat card; one phone keeping score opens any.
   return (
     <div className="app">
       <header className="header" style={{ paddingLeft: 20 }}>
@@ -29,9 +33,19 @@ export function Table() {
             <span className="zh" lang="zh-Hant">{ROUND_ZH[st.tableWind]}</span><span>{ROUND[st.tableWind]} round</span>
           </h1>
         </div>
+        <button type="button" className="icon-btn" aria-label={s.shared ? `Session code ${s.shared.code}, invite players` : 'Invite players'} onClick={() => nav.openSheet('invite')}>
+          {s.shared ? <span className="num" style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>{s.shared.code}</span> : <Icon.invite />}
+        </button>
         <button type="button" className="icon-btn" aria-label="Menu" onClick={() => nav.openSheet('menu')}><Icon.more /></button>
       </header>
       {!store.storageOk && <div className="banner" role="status">This session won’t be saved if you close the page.</div>}
+      {s.shared && store.status !== 'open' && <div className="banner" role="status">{store.status === 'missing' ? 'This shared session can’t be found anymore.' : 'Offline, reconnecting…'}</div>}
+      {lockedBy !== null && (
+        <div className="banner" role="status">
+          {lockedBy >= 0 && <span className="swatch" style={{ background: PLAYER_COLORS[lockedBy] }} />}
+          <span style={{ flexGrow: 1 }}>{lockedBy >= 0 ? s.players[lockedBy] : 'Someone'} is scoring game {st.gameNumber}…</span>
+        </div>
+      )}
       {store.draft && (
         <button type="button" className="banner" style={{ textAlign: 'left' }} onClick={() => nav.go('score')}>
           <span style={{ flexGrow: 1 }}>You were scoring game {st.gameNumber}. Resume?</span><Icon.chevron />
@@ -44,14 +58,15 @@ export function Table() {
             const w = seatWindOf(i, st.dealer);
             const fl = flowerNumberOf(i, st.dealer);
             return (
-              <button key={i} type="button" onClick={() => nav.openSheet('seat', i)}
-                style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 14, minHeight: 166, textAlign: 'left', background: PLAYER_COLORS[i], border: '1px solid var(--line)' }}>
+              <button key={i} type="button" disabled={store.mySeat !== null && i !== store.mySeat} onClick={() => nav.openSheet('seat', i)}
+                style={{ cursor: store.mySeat !== null && i !== store.mySeat ? 'default' : 'pointer', color: 'var(--ink)', display: 'flex', flexDirection: 'column', gap: 4, padding: 14, minHeight: 166, textAlign: 'left', background: PLAYER_COLORS[i], border: '1px solid var(--line)' }}>
                 <span className="row" style={{ gap: 6, width: '100%' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, flexGrow: 1 }}>
                     <span className="zh" lang="zh-Hant" style={{ fontSize: 24, lineHeight: 1 }}>{WIND_ZH[w]}</span>
                     <span style={{ fontSize: 15, fontWeight: 600 }}>{WIND_NAME[w]}</span>
                   </span>
                   {i === st.dealer && <span className="tag">Dealer</span>}
+                  {i === store.mySeat && <span className="tag tag-you">You</span>}
                 </span>
                 <span style={{ marginTop: 'auto', fontSize: 19, fontWeight: 600 }}>{s.players[i]}</span>
                 <span style={{ fontSize: 14, fontWeight: 500 }}>Flower {fl}</span>
@@ -74,7 +89,7 @@ export function Table() {
           <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('draw')}>No winner (draw)</button>
         </div>
       </div>
-      <TabBar current="table" />
+      <TabBar current="table" locked={lockedBy !== null} />
     </div>
   );
 }

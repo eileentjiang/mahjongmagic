@@ -4,6 +4,7 @@ import { KongKind } from '../engine/payout';
 import { Icon, PlayerChips, PLAYER_COLORS, Sheet } from '../components/ui';
 import { useNav, useStore } from '../state/store';
 import { SeatCard } from './Table';
+import { InviteSheet } from './Sharing';
 
 export function Sheets() {
   const nav = useNav();
@@ -13,6 +14,7 @@ export function Sheets() {
   if (nav.sheet === 'kong') return <KongSheet />;
   if (nav.sheet === 'draw') return <DrawSheet />;
   if (nav.sheet === 'endConfirm') return <EndConfirm />;
+  if (nav.sheet === 'invite') return <InviteSheet />;
   if (nav.sheet === 'seat') return <Sheet title={`${store.current.players[nav.sheetArg]}’s seat`}><SeatCard seat={nav.sheetArg} /></Sheet>;
   return null;
 }
@@ -23,8 +25,9 @@ function MenuSheet() {
   const items: [string, string, () => void][] = [
     ['Home', 'Your session is saved; pick it up anytime', () => nav.reset('home')],
     ['Standings & game history', 'Rankings and every game so far', () => nav.go('standings')],
-    ['Rules & payout', rulesSummary(store.table!.rules).replace('Hong Kong style · ', ''), () => nav.go('rulesEdit')],
-    ['Players & seats', 'Fix a name, the dealer or the table wind', () => nav.go('playersEdit')],
+    ['Rules & payout', rulesSummary(store.table!.rules).replace('Hong Kong style · ', '') + (store.canEdit ? '' : ' · view only'), () => nav.go('rulesEdit')],
+    ['Players & seats', store.canEdit ? 'Fix a name, the dealer or the table wind' : 'View only on this phone', () => nav.go('playersEdit')],
+    ...(store.current!.shared ? [] : [['Invite players', 'Everyone follows on their own phone', () => nav.openSheet('invite')] as [string, string, () => void]]),
     ['About Mahjong Magic', 'Who made this and how to give feedback', () => nav.go('about')],
   ];
   return (
@@ -84,7 +87,7 @@ function KongSheet() {
           <div className="row" style={{ justifyContent: 'space-between' }}><span>{s.players.filter((_, i) => i !== owner).join(', ')}</span><span className="num">{money(-each)} each</span></div>
         </div>
       )}
-      <button type="button" className="btn btn-primary" disabled={owner === null} onClick={() => { store.recordKong(owner!, kind); nav.closeSheet(); }}>
+      <button type="button" className="btn btn-primary" disabled={owner === null} onClick={async () => { await store.recordKong(owner!, kind); nav.closeSheet(); }}>
         {owner === null ? 'Pick who declared it' : `Record kong · ${money(each * 3, true)}`}
       </button>
     </Sheet>
@@ -99,7 +102,7 @@ function DrawSheet() {
   return (
     <Sheet title={`Record a draw for game ${st.gameNumber}?`}>
       <p style={{ margin: '-6px 0 4px', fontSize: 15 }}>No money moves · {st.rules.dealerKeepsDealOnDraw ? `${next} keeps the deal.` : `deal passes to ${next}.`}</p>
-      <button type="button" className="btn btn-primary" onClick={() => { store.recordDraw(); nav.closeSheet(); }}>Record draw</button>
+      <button type="button" className="btn btn-primary" onClick={async () => { await store.recordDraw(); nav.closeSheet(); }}>Record draw</button>
       <button type="button" className="btn" onClick={nav.closeSheet}>Cancel</button>
     </Sheet>
   );
