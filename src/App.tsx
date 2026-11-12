@@ -14,6 +14,7 @@ import { Camera } from './screens/Camera';
 import { Unsure } from './screens/Unsure';
 import { Claim, Join } from './screens/Sharing';
 import { Accuracy } from './screens/Accuracy';
+import { UpdateBanner } from './components/UpdateBanner';
 import { useEffect, useState } from 'react';
 import { deviceId } from './state/sync';
 
@@ -88,6 +89,7 @@ function Shell() {
       <Screen />
       <Sheets />
       <Notice />
+      <UpdateBanner />
     </NavProvider>
   );
 }

@@ -43,10 +43,10 @@ async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<
   }
 }
 
-/** Shrink a photo to at most 1600px on the long side, as base64 JPEG. Photos are never stored. */
+/** Shrink a saved photo to at most 1280px on the long side, as base64 JPEG. Photos are never stored. */
 export async function photoToJpeg(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
@@ -66,10 +66,12 @@ export interface ModelStats {
   photos: number; tiles: number; wrong: number; silentWrong: number; flagged: number; flaggedWrong: number;
   missed: number; extra: number; flowersWrong: number; perfectPhotos: number; confusions: Record<string, number>;
 }
-export async function getStats(): Promise<Record<string, ModelStats>> {
+export interface PhotoCost { photos: number; inputTokens: number; outputTokens: number; usd: number; last: { input: number; output: number; usd: number; at: number } | null }
+export async function getStats(): Promise<{ byModel: Record<string, ModelStats>; costs: Record<string, PhotoCost> }> {
   const res = await fetch(SERVER + '/stats').catch(() => { throw new Error('Couldn’t reach the server.'); });
   if (!res.ok) throw new Error('Couldn’t load the numbers.');
-  return ((await res.json()) as { byModel: Record<string, ModelStats> }).byModel;
+  const d = (await res.json()) as { byModel?: Record<string, ModelStats>; costs?: Record<string, PhotoCost> };
+  return { byModel: d.byModel ?? {}, costs: d.costs ?? {} };
 }
 export const readRule = (text: string) => post<RuleReading>('/rule', { text }, 60_000);
 

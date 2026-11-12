@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { DurableObject } from 'cloudflare:workers';
 import { apply, expireLock, newRoom, Op, RoomSession, RoomState } from './room';
 import { addTo, compare, emptyStats, Feedback, ModelStats } from './feedback';
+import { parseCompact } from './compact';
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -64,6 +65,32 @@ const RecognizeSchema = z.object({
     alternatives: z.array(z.enum(TILE_IDS)),
   })),
 });
+
+// Compact answer for Claude: one short line of tiles instead of an object per tile (far fewer output tokens).
+//   "m4 m4 p3 p4 p5?p3/p6 s1"  →  a ? marks an unsure tile; anything after it (split by /) are the next-best readings.
+const CompactSchema = z.object({
+  quality: z.enum(['ok', 'blurry', 'dark', 'partial', 'no_tiles']),
+  problem: z.string().nullable(),
+  tiles: z.string(),
+  flowers: z.string(),
+});
+
+const COMPACT_PROMPT = `Photo of a winning mahjong hand (Hong Kong / Chinese style, 144-tile set) to be scored. The photo is cropped to the hand.
+
+Tile ids: characters m1-m9 (number over 萬; 五 and 伍 are 5), dots p1-p9 (count circles), bamboo s1-s9 (count sticks; the 1 is a bird or decorated stalk), winds we ws ww wn (東南西北), dragons dr 中, dg 發, dw white (blank or framed). Flowers f1-f4 (plum, orchid, chrysanthemum, bamboo) and seasons x1-x4 (spring, summer, autumn, winter) show a plant or season picture and a small number 1-4. Tiles may be upside down.
+
+Work carefully: count the tiles, set flowers aside, then for each tile decide the suit first and the number second (count marks one by one). A hand is 14 tiles plus one per kong, not counting flowers.
+
+Answer:
+- tiles: every non-flower tile, left to right and row by row, separated by spaces, e.g. "m4 m4 p3 p4 p5 s1". If you aren't certain of a tile, add ? and your next-best readings separated by /, e.g. "p5?p3/p6". Never guess silently.
+- flowers: the flower and season tiles, e.g. "x1", or "" if none.
+- quality: ok, blurry, dark, partial (tiles cut off or covered) or no_tiles. problem: one short friendly sentence when quality isn't ok, else null.`;
+
+/** Anthropic prices per million tokens, for the cost-per-photo figure. */
+const PRICES: Record<string, { input: number; output: number }> = {
+  'claude-opus-5-5': { input: 4, output: 20 },
+  'claude-sonnet-5-5': { input: 2, output: 10 },
+};
 
 const RECOGNIZE_PROMPT = `This is a photo of a winning mahjong hand (Hong Kong / Chinese style, 144-tile set), laid out on a table so it can be scored.
 
@@ -187,11 +214,27 @@ async function recognizePhoto(env: Env, image: string): Promise<Recognition & { 
   const reader = env.PHOTO_READER ?? 'claude';
   if (reader === 'claude') {
     try {
-      const raw = await ask(env, RecognizeSchema, [
-        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: image } },
-        { type: 'text', text: RECOGNIZE_PROMPT },
-      ], 'Claude declined to read this photo. Try another photo, or enter the tiles by hand.', PHOTO_CLAUDE_MODEL);
-      return { ...toRecognition(raw as unknown as Record<string, unknown>), model: PHOTO_CLAUDE_MODEL };
+      const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 1 });
+      const response = await client.messages.parse({
+        model: PHOTO_CLAUDE_MODEL,
+        max_tokens: 8000,
+        output_config: { effort: 'low', format: zodOutputFormat(CompactSchema) },
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: image } },
+          { type: 'text', text: COMPACT_PROMPT },
+        ] }],
+      });
+      if (response.stop_reason === 'refusal') throw new UserError('Claude declined to read this photo. Try another photo, or enter the tiles by hand.');
+      if (!response.parsed_output) throw new Error(`No parsed output (stop_reason ${response.stop_reason})`);
+      // Record exactly what this photo cost (input includes the image; output includes thinking).
+      const price = PRICES[PHOTO_CLAUDE_MODEL];
+      const u = response.usage;
+      const input = u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+      const usd = (input * price.input + u.output_tokens * price.output) / 1_000_000;
+      await env.STATS.get(env.STATS.idFromName('all')).fetch('https://stats/cost', {
+        method: 'POST', body: JSON.stringify({ model: PHOTO_CLAUDE_MODEL, input, output: u.output_tokens, usd }),
+      }).catch(() => undefined);
+      return { ...parseCompact(response.parsed_output), model: PHOTO_CLAUDE_MODEL };
     } catch (e) {
       if (e instanceof UserError) throw e;
       throw new PhotoError('Couldn’t read the photo just now. Try again, or enter the tiles by hand.', `${PHOTO_CLAUDE_MODEL}: ${(e as Error).message}`.slice(0, 300));
@@ -299,14 +342,27 @@ async function createRoom(request: Request, env: Env, origin: string | null): Pr
   return json({ error: 'Couldn’t create a code. Try again.' }, 503, origin);
 }
 
-/** Running photo-accuracy totals per model, plus the most recent comparisons. */
+interface PhotoCost { photos: number; inputTokens: number; outputTokens: number; usd: number; last: { input: number; output: number; usd: number; at: number } | null }
+
+/** Running photo-accuracy totals per model, plus the most recent comparisons and the cost of each photo. */
 export class PhotoStats extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const byModel = (await this.ctx.storage.get<Record<string, ModelStats>>('byModel')) ?? {};
+    const costs = (await this.ctx.storage.get<Record<string, PhotoCost>>('costs')) ?? {};
     if (url.pathname === '/get') {
       const recent = (await this.ctx.storage.get<unknown[]>('recent')) ?? [];
-      return Response.json({ byModel, recent: recent.slice(-50) });
+      return Response.json({ byModel, costs, recent: recent.slice(-50) });
+    }
+    if (url.pathname === '/cost') {
+      const c = (await request.json()) as { model: string; input: number; output: number; usd: number };
+      const prev = costs[c.model] ?? { photos: 0, inputTokens: 0, outputTokens: 0, usd: 0, last: null };
+      costs[c.model] = {
+        photos: prev.photos + 1, inputTokens: prev.inputTokens + c.input, outputTokens: prev.outputTokens + c.output, usd: prev.usd + c.usd,
+        last: { input: c.input, output: c.output, usd: c.usd, at: Date.now() },
+      };
+      await this.ctx.storage.put('costs', costs);
+      return Response.json({ ok: true });
     }
     let f: Feedback;
     try { f = await request.json(); } catch { return Response.json({ error: 'Bad feedback' }, { status: 400 }); }
