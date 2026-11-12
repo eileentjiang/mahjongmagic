@@ -37,10 +37,10 @@ async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<
   }
 }
 
-/** Shrink a photo to at most 1600px on the long side, as base64 JPEG. Photos are never stored. */
+/** Shrink a photo to at most 1280px on the long side, as base64 JPEG. Photos are never stored. */
 export async function photoToJpeg(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
