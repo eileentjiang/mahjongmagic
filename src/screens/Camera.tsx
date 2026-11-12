@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { photoToJpeg, recognize } from '../api';
 import { Icon } from '../components/ui';
 import { useNav, useStore } from '../state/store';
@@ -46,7 +46,15 @@ export function Camera() {
       setPhase({ kind: 'error', message: 'That photo couldn’t be opened. Try again.' });
     }
   };
-  const shoot = () => { if (input.current) { input.current.value = ''; input.current.click(); } };
+  const live = useLiveCamera();
+  const pickFile = () => { if (input.current) { input.current.value = ''; input.current.click(); } };
+  const shoot = async () => {
+    if (live.status !== 'on') return pickFile();
+    const jpeg = live.capture();
+    if (!jpeg) return pickFile();
+    lastPhoto.current = jpeg;
+    await read(jpeg);
+  };
   const byHand = () => nav.go('entry');
 
   return (
@@ -55,9 +63,19 @@ export function Camera() {
         <button type="button" className="icon-btn" aria-label="Back to the table" onClick={nav.back} style={{ color: '#FBF8EF' }}><Icon.back /></button>
         <h1 style={{ flexGrow: 1, textAlign: 'center', fontSize: 18, fontWeight: 600, paddingRight: 44 }}>Photo the winning hand</h1>
       </header>
-      <input ref={input} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e.target.files?.[0])} />
+      <input ref={input} type="file" accept="image/*" {...(live.status === 'on' ? {} : { capture: 'environment' as const })} hidden onChange={(e) => onFile(e.target.files?.[0])} />
 
-      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '0 24px', textAlign: 'center' }}>
+      {live.status === 'on' && phase.kind !== 'reading' ? (
+        <div ref={live.boxRef} style={{ position: 'relative', flexGrow: 1, overflow: 'hidden', minHeight: 320 }}>
+          <video ref={live.videoRef} autoPlay playsInline muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          {/* Faint tile outlines: lay the hand in rows of 3. Only this area (plus a little margin) is sent. */}
+          <div aria-hidden="true" style={{ position: 'absolute', left: live.guide.x, top: live.guide.y, width: live.guide.w, height: live.guide.h, display: 'grid', gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`, gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`, gap: 3, boxShadow: '0 0 0 9999px rgba(22,26,26,0.45)' }}>
+            {Array.from({ length: GRID_COLS * GRID_ROWS }, (_, k) => <span key={k} style={{ border: '1.5px solid rgba(251,248,239,0.55)', borderRadius: 4 }} />)}
+          </div>
+          <p style={{ position: 'absolute', left: 0, right: 0, bottom: 8, margin: 0, textAlign: 'center', fontSize: 13, fontWeight: 600, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>Line the tiles up in the outlines, rows of 3, flowers included</p>
+        </div>
+      ) : (
+        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '0 24px', textAlign: 'center' }}>
         {phase.kind === 'reading' ? (
           <>
             <span aria-hidden="true" className="spinner" />
@@ -72,12 +90,16 @@ export function Camera() {
         )}
       </div>
 
+      )}
       <footer style={{ padding: '16px 20px calc(30px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <button type="button" aria-label="Take photo" disabled={phase.kind === 'reading'} onClick={shoot}
           style={{ width: 78, height: 78, borderRadius: 39, border: '3px solid #FBF8EF', background: 'transparent', padding: 5, opacity: phase.kind === 'reading' ? 0.4 : 1 }}>
           <span style={{ display: 'block', width: '100%', height: '100%', borderRadius: '50%', background: '#FBF8EF' }} />
         </button>
-        <button type="button" className="link-btn" style={{ color: '#FBF8EF', fontWeight: 500 }} onClick={byHand}>Enter tiles by hand instead</button>
+        <div style={{ display: 'flex', gap: 20 }}>
+          <button type="button" className="link-btn" style={{ color: '#FBF8EF', fontWeight: 500 }} onClick={byHand}>Enter tiles by hand</button>
+          {live.status === 'on' && <button type="button" className="link-btn" style={{ color: '#FBF8EF', fontWeight: 500 }} onClick={pickFile}>Use a saved photo</button>}
+        </div>
       </footer>
 
       {(phase.kind === 'rejected' || phase.kind === 'error') && (
@@ -103,4 +125,65 @@ export function Camera() {
       )}
     </div>
   );
+}
+
+export const GRID_COLS = 3;
+export const GRID_ROWS = 6;
+const TILE_ASPECT = 3 / 4; // width / height of one tile
+const GRID_ASPECT = (GRID_COLS * TILE_ASPECT) / GRID_ROWS;
+const MARGIN = 0.08; // crop a little outside the outlines, in case tiles sit slightly off
+
+/** Live camera with a tile-outline guide; capture() returns just the guide area as base64 JPEG. */
+function useLiveCamera() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<'starting' | 'on' | 'off'>('starting');
+  const [box, setBox] = useState({ w: 0, h: 0 });
+
+  const streamRef = useRef<MediaStream | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!navigator.mediaDevices?.getUserMedia) { setStatus('off'); return; }
+    navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1920 } } })
+      .then((s) => { if (cancelled) { s.getTracks().forEach((t) => t.stop()); return; } streamRef.current = s; setStatus('on'); })
+      .catch(() => setStatus('off'));
+    return () => { cancelled = true; streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null; };
+  }, []);
+
+  // Attach the stream whenever the video element is (re)shown.
+  useEffect(() => {
+    if (videoRef.current && streamRef.current && videoRef.current.srcObject !== streamRef.current) videoRef.current.srcObject = streamRef.current;
+  });
+
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setBox({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [status]);
+
+  const gh = Math.min(box.h * 0.86, (box.w * 0.82) / GRID_ASPECT);
+  const gw = gh * GRID_ASPECT;
+  const guide = { x: (box.w - gw) / 2, y: (box.h - gh) / 2 - 10, w: gw, h: gh };
+
+  const capture = (): string | null => {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth || !box.w) return null;
+    // The video fills the box with object-fit: cover; map the guide back to video pixels.
+    const scale = Math.max(box.w / v.videoWidth, box.h / v.videoHeight);
+    const ox = (box.w - v.videoWidth * scale) / 2, oy = (box.h - v.videoHeight * scale) / 2;
+    const m = MARGIN * guide.w;
+    let sx = (guide.x - m - ox) / scale, sy = (guide.y - m - oy) / scale;
+    let sw = (guide.w + 2 * m) / scale, sh = (guide.h + 2 * m) / scale;
+    sx = Math.max(0, sx); sy = Math.max(0, sy);
+    sw = Math.min(v.videoWidth - sx, sw); sh = Math.min(v.videoHeight - sy, sh);
+    const out = Math.min(1, 1280 / Math.max(sw, sh));
+    const c = document.createElement('canvas');
+    c.width = Math.round(sw * out); c.height = Math.round(sh * out);
+    c.getContext('2d')!.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.88).split(',')[1];
+  };
+
+  return { status, videoRef, boxRef, guide, capture };
 }

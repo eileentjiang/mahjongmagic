@@ -66,10 +66,12 @@ export interface ModelStats {
   photos: number; tiles: number; wrong: number; silentWrong: number; flagged: number; flaggedWrong: number;
   missed: number; extra: number; flowersWrong: number; perfectPhotos: number; confusions: Record<string, number>;
 }
-export async function getStats(): Promise<Record<string, ModelStats>> {
+export interface PhotoCost { photos: number; inputTokens: number; outputTokens: number; usd: number; last: { input: number; output: number; usd: number; at: number } | null }
+export async function getStats(): Promise<{ byModel: Record<string, ModelStats>; costs: Record<string, PhotoCost> }> {
   const res = await fetch(SERVER + '/stats').catch(() => { throw new Error('Couldn’t reach the server.'); });
   if (!res.ok) throw new Error('Couldn’t load the numbers.');
-  return ((await res.json()) as { byModel: Record<string, ModelStats> }).byModel;
+  const d = (await res.json()) as { byModel?: Record<string, ModelStats>; costs?: Record<string, PhotoCost> };
+  return { byModel: d.byModel ?? {}, costs: d.costs ?? {} };
 }
 export const readRule = (text: string) => post<RuleReading>('/rule', { text }, 60_000);
 
