@@ -8,7 +8,8 @@ export function Home() {
   const store = useStore();
   const nav = useNav();
   const cur = store.current && !store.current.finished ? store.current : null;
-  const firstTime = !cur && store.profiles.length === 0 && store.sessions.length === 0;
+  // Nothing to continue and no saved tables: show the welcome tile instead of an empty page.
+  const firstTime = !cur && store.profiles.length === 0;
   const start = () => { store.startSetup(); nav.go('rules'); };
 
   return (
