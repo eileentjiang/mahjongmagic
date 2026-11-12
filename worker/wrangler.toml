@@ -25,4 +25,6 @@ new_sqlite_classes = ["PhotoStats"]
 binding = "AI"
 
 [vars]
+# Gemini reads photos when the GEMINI_API_KEY secret is set; Workers AI is the backup.
+GEMINI_MODEL = "gemini-2.5-flash"
 PHOTO_MODEL = "@cf/moonshotai/kimi-k2.6"
