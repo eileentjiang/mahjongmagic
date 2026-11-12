@@ -233,6 +233,7 @@ Presets marked ★ are **on in the House default default profile**.
 1. Typically after a full wind round (4 rounds), or whenever the group decides, a user taps **"End session"** and confirms ("End the session? … You can still reopen it for 24 hours").
 2. The summary shows **final standings**, net $ per player, per-round breakdowns, and the minimal **"who pays whom"** list.
 3. User chooses **"Finish"** (archives the session as read-only) or **"Save & continue later"** (resumes with the same seats, balances, and table wind next time).
+4. **Only one session can be open at a time.** A saved ("continue later") session still counts as open: starting a new session, playing again with a saved table, or joining someone else's session first asks the player to continue it or end it and settle up. Saved tables under "Play again" are always available once nothing is open.
 
 ---
 

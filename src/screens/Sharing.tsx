@@ -5,6 +5,7 @@ import { WIND_NAME, WIND_ZH } from '../engine/tiles';
 import { seatWindOf } from '../engine/session';
 import { useNav, useStore } from '../state/store';
 import { deviceId } from '../state/sync';
+import { OneAtATime } from './Home';
 
 /** The link a QR code or share sheet hands out. Opening it lands on Join with the code filled in. */
 export const joinLink = (code: string) => `${location.origin}${location.pathname}?join=${code}`;
@@ -74,6 +75,8 @@ export function InviteSheet() {
 export function Join() {
   const store = useStore();
   const nav = useNav();
+  const busy = store.current && !store.current.finished && store.current.shared?.code !== store.joinCode ? store.current : null;
+  useEffect(() => { if (busy && store.joinCode) store.join(null); }, [busy, store.joinCode]); // eslint-disable-line
   const [text, setText] = useState(store.joinCode ?? '');
   const room = store.room;
   const status = store.status;
@@ -83,6 +86,7 @@ export function Join() {
     <div className="app">
       <Header title="Join a session" />
       <div className="body" style={{ gap: 18 }}>
+        {busy && <OneAtATime />}
         <p style={{ margin: 0, fontSize: 15, lineHeight: 1.45 }}>Ask whoever started the session for the 4-letter code, or scan the QR code on their phone with your camera.</p>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span className="label">Session code</span>
@@ -94,7 +98,7 @@ export function Join() {
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>No account needed. Your phone joins the same live session.</p>
       </div>
       <footer className="footer">
-        <button type="button" className="btn btn-primary" disabled={!valid || (store.joinCode === text && status === 'connecting')} onClick={() => store.join(text)}>
+        <button type="button" className="btn btn-primary" disabled={!!busy || !valid || (store.joinCode === text && status === 'connecting')} onClick={() => store.join(text)}>
           {store.joinCode === text && status === 'connecting' ? 'Finding it…' : 'Join'}
         </button>
       </footer>
