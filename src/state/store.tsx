@@ -16,6 +16,10 @@ export interface Draft {
   selfDraw: boolean;
   concealed: boolean;
   removed: string[];
+  /** Index of the winning tile in `tiles` (default: the last one). */
+  winIndex?: number;
+  /** Tiles the photo reader wasn't sure about, by index, with its other guesses. */
+  unsure?: { index: number; alternatives: TileId[] }[];
 }
 
 interface Persisted {
@@ -52,7 +56,7 @@ export interface Store extends Persisted {
   addEvent: (e: SessionEvent) => void;
   recordKong: (owner: number, kind: KongKind) => void;
   recordDraw: () => void;
-  confirmGame: (r: { points: number; fans: FanHit[]; edited: boolean }) => void;
+  confirmGame: (r: { points: number; fans: FanHit[]; edited: boolean; discarderOnlyPoints: number }) => void;
   changeRules: (rules: RuleSet) => void;
   finishSession: (keep: boolean) => void;
   saveProfile: (s: Session) => void;
@@ -104,7 +108,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       withCurrent((s) => ({ ...s, events: [...s.events, { type: 'kong', at: Date.now(), owner, kind, cents: kongPayout(kind, table.rules, owner) }] }));
     },
     recordDraw: () => withCurrent((s) => ({ ...s, events: [...s.events, { type: 'draw', at: Date.now() }] })),
-    confirmGame: ({ points, fans, edited }) => {
+    confirmGame: ({ points, fans, edited, discarderOnlyPoints }) => {
       const dr = data.draft;
       if (!dr || !table) return;
       const discarder = dr.selfDraw ? null : dr.discarder;
@@ -115,7 +119,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           events: [...s.events, {
             type: 'game', at: Date.now(), winner: dr.winner, discarder, tiles: dr.tiles, flowers: dr.flowers,
-            concealed: dr.concealed, points, fans, edited, cents: winPayout(points, table.rules, dr.winner, discarder),
+            concealed: dr.concealed, points, fans, edited, cents: winPayout(points, table.rules, dr.winner, discarder, discarderOnlyPoints),
           }],
         }),
       }));
@@ -146,7 +150,7 @@ export function useStore(): Store {
 
 // ---------- Navigation: a stack mirrored into browser history, so ← and the phone's back gesture agree.
 export type Route =
-  | 'home' | 'rules' | 'players' | 'table' | 'entry' | 'score' | 'standings' | 'end' | 'about'
+  | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about'
   | 'rulesEdit' | 'playersEdit';
 export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | null;
 

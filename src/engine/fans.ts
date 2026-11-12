@@ -23,6 +23,10 @@ export interface FanHit {
   /** Per-kong fans that house rules may drop when kongs are paid on the spot. */
   perKong?: boolean;
   selfDrawn?: boolean;
+  /** A custom house rule rather than a standard pattern. */
+  house?: boolean;
+  /** Custom rule paid only by the discarder (everyone on a self-draw). */
+  discarderOnly?: boolean;
 }
 
 // Exclusions: a fan listed here is not scored when the key fan is (MCR App. 1 + non-repeat).

@@ -123,3 +123,28 @@ describe('session replay', () => {
     expect(st.balances.reduce((a, b) => a + b, 0)).toBe(0);
   });
 });
+
+describe('custom house rules', () => {
+  const clause = (o: Partial<import('./customRule').RuleClause>): import('./customRule').RuleClause => ({
+    kind: 'set', set: null, tile: null, suit: null, rank: null, min: null, max: null, method: null, flag: null, pattern: null, ...o,
+  });
+  const greenDragon = { id: 'g', text: 'If the winning hand has a pung or kong of green dragons, add 2 points.', name: 'Green dragon pung', when: '', points: 2, payer: 'everyone' as const, on: true,
+    all: [clause({ kind: 'set', set: 'pungOrKong', tile: 'dg' })] };
+  const fives = { ...greenDragon, id: 'f', name: 'Pair of fives', all: [clause({ kind: 'pair', rank: 5 })] };
+  const hand = t('m1 m2 m3 m2 m3 m4 m7 m8 m9 p2 p3 p4 p5 p5');
+  it('a matching rule that is on is added automatically', () => {
+    const r = scoreHand({ tiles: hand, flowers: ['x2'], ...ctx() }, { ...HOUSE_DEFAULT, customRules: [fives, greenDragon] });
+    expect(names(r)).toContain('Pair of fives');
+    expect(names(r)).not.toContain('Green dragon pung');
+    expect(r.points).toBe(8);
+  });
+  it('a rule that is off never applies', () => {
+    const r = scoreHand({ tiles: hand, flowers: ['x2'], ...ctx() }, { ...HOUSE_DEFAULT, customRules: [{ ...fives, on: false }] });
+    expect(r.points).toBe(6);
+  });
+  it('discarder-only rule points are paid by the discarder alone', () => {
+    const c = winPayout(8, HOUSE_DEFAULT, 1, 2, 2);
+    expect(c).toEqual([-60, 260, -140, -60]);
+    expect(c.reduce((a, b) => a + b, 0)).toBe(0);
+  });
+});

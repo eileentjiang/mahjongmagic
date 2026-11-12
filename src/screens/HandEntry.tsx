@@ -33,9 +33,9 @@ export function HandEntry() {
   const add = (t: TileId) => {
     if (isFlower(t)) { if (!draft.flowers.includes(t)) setDraft({ ...draft, flowers: [...draft.flowers, t] }); return; }
     if ((c.get(t) ?? 0) >= 4) return;
-    setDraft({ ...draft, tiles: [...tiles, t], removed: [] });
+    setDraft({ ...draft, tiles: [...tiles, t], removed: [], winIndex: undefined, unsure: [] });
   };
-  const removeAt = (i: number) => setDraft({ ...draft, tiles: tiles.filter((_, j) => j !== i), removed: [] });
+  const removeAt = (i: number) => setDraft({ ...draft, tiles: tiles.filter((_, j) => j !== i), removed: [], winIndex: undefined, unsure: [] });
   const removeFlower = (f: TileId) => setDraft({ ...draft, flowers: draft.flowers.filter((x) => x !== f) });
 
   const label = ready ? 'Score this hand' : left > 0 ? `Add ${left} more tile${left === 1 ? '' : 's'}` : `Remove ${-left} tile${left === -1 ? '' : 's'}, or finish a kong`;
