@@ -70,7 +70,10 @@ export function Camera() {
           <video ref={live.videoRef} autoPlay playsInline muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
           {/* The area that gets sent (plus a little margin); everything outside is dimmed. */}
           <div aria-hidden="true" style={{ position: 'absolute', left: live.guide.x, top: live.guide.y, width: live.guide.w, height: live.guide.h, border: '2px solid rgba(251,248,239,0.7)', borderRadius: 8, boxShadow: '0 0 0 9999px rgba(22,26,26,0.45)' }} />
-          <p style={{ position: 'absolute', left: 0, right: 0, bottom: 8, margin: 0, textAlign: 'center', fontSize: 13, fontWeight: 600, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>Consolidate tiles in the indicated area</p>
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 8, textAlign: 'center', textShadow: '0 1px 3px rgba(0,0,0,0.7)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Consolidate tiles in the indicated area</p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 500, opacity: 0.85 }}>Each photo costs me $0.02 please be nice</p>
+          </div>
         </div>
       ) : (
         <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '0 24px', textAlign: 'center' }}>
