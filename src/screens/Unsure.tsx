@@ -10,25 +10,27 @@ export function Unsure() {
   const nav = useNav();
   const draft = store.draft!;
   const pending = draft.unsure ?? [];
-  const [at, setAt] = useState(0);
-  const current = pending[Math.min(at, pending.length - 1)];
+  // Any tile marked ? can be fixed first: tap it. Otherwise start with the first one.
+  const [picked, setPicked] = useState<number | null>(null);
+  const current = pending.find((p) => p.index === picked) ?? pending[0];
 
   const choose = (t: TileId) => {
     const tiles = draft.tiles.map((x, i) => (i === current.index ? t : x));
     const left = pending.filter((p) => p.index !== current.index);
     store.update((d) => ({ ...d, draft: { ...d.draft!, tiles, unsure: left } }));
-    setAt(0);
+    setPicked(null);
   };
 
   return (
     <div className="app">
       <Header title={pending.length ? `Check ${pending.length} tile${pending.length === 1 ? '' : 's'}` : 'All checked'} />
       <div className="body">
-        <p style={{ margin: 0, fontSize: 15 }}>{pending.length ? 'Here’s what I see. I’m not sure about the tiles marked ?, starting with the boxed one.' : 'Thanks. Everything else read clearly.'}</p>
+        <p style={{ margin: 0, fontSize: 15 }}>{pending.length ? 'Here’s what I see. I’m not sure about the tiles marked ?. Tap any of them to check it.' : 'Thanks. Everything else read clearly.'}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', rowGap: 16, columnGap: 4, justifyItems: 'center', paddingTop: 8 }}>
           {draft.tiles.map((t, i) => {
             const unsure = pending.some((p) => p.index === i);
-            return <Tile key={i} t={t} size={0.64} label={tileName(t) + (unsure ? ', not sure' : '')} flag={current?.index === i ? 'current' : unsure ? 'pending' : undefined} />;
+            return <Tile key={i} t={t} size={0.64} label={tileName(t) + (unsure ? ', not sure, tap to check it' : '')} flag={current?.index === i ? 'current' : unsure ? 'pending' : undefined}
+              onClick={unsure ? () => setPicked(i) : undefined} />;
           })}
         </div>
         {current && (

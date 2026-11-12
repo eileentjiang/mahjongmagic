@@ -40,24 +40,35 @@ const TILE_GUIDE = `Tile ids:
 - Flowers (plum 梅 1, orchid 蘭 2, chrysanthemum 菊 3, bamboo 竹 4): f1-f4. Seasons (spring 春 1, summer 夏 2, autumn 秋 3, winter 冬 4): x1-x4. They usually carry a small number in a corner.`;
 
 // ---------- /recognize
+// Field order matters: models write the answer top to bottom, so this order makes them
+// count first, set flowers aside, then read each tile's suit before its number.
 const RecognizeSchema = z.object({
   quality: z.enum(['ok', 'blurry', 'dark', 'partial', 'no_tiles']),
   problem: z.string().nullable(),
+  totalTiles: z.number().int(),
+  flowers: z.array(z.object({ tile: z.enum(FLOWER_IDS), sure: z.boolean() })),
   tiles: z.array(z.object({
+    suit: z.enum(['characters', 'dots', 'bamboo', 'wind', 'dragon']),
+    number: z.number().int().nullable(),
     tile: z.enum(TILE_IDS),
     sure: z.boolean(),
     alternatives: z.array(z.enum(TILE_IDS)),
   })),
-  flowers: z.array(z.object({ tile: z.enum(FLOWER_IDS), sure: z.boolean() })),
 });
 
 const RECOGNIZE_PROMPT = `This is a photo of a winning mahjong hand (Hong Kong / Chinese style, 144-tile set), laid out on a table so it can be scored.
 
 ${TILE_GUIDE}
 
-List every tile in the hand, left to right and row by row: concealed tiles and melded sets alike, all four tiles of any kong, and the winning tile. A normal hand has 14 tiles plus one extra per kong. Put flower and season tiles in "flowers", not "tiles". Ignore tiles that are clearly not part of this hand (discards, the wall, other players' tiles).
+Work through the photo in this order:
+1. Count. Count every tile in the hand: concealed tiles and melded sets alike, all four tiles of any kong, the winning tile, and any flowers or seasons. Put that number in "totalTiles". Ignore tiles that are clearly not part of this hand (discards, the wall, other players' tiles).
+2. Set flowers aside. Find the flower and season tiles (a plant or season picture, usually with a small number 1-4 in a corner) and list them in "flowers". They don't go in "tiles".
+3. Read each remaining tile, left to right and row by row, in two steps:
+   a. Suit first: "characters" (a character over 萬), "dots" (circles), "bamboo" (sticks, or a bird or decorated stalk for the 1), "wind" (東 南 西 北) or "dragon" (中, 發, or a blank or framed tile).
+   b. Then the number: for dots and bamboo, count the circles or sticks one by one; for characters, read the number character above 萬 (一二三四五/伍六七八九). Put it in "number" (null for winds and dragons), then give the tile id in "tile".
+   A normal hand is 14 tiles plus one per kong, not counting flowers. If your list doesn't add up, look again before answering.
 
-For each tile, set "sure" to false if you can't be certain (blur, glare, angle, partly covered, unusual artwork), and give your next most likely readings in "alternatives". Never guess silently: a wrong confident read costs someone money.
+For each tile, set "sure" to false if you can't be certain (blur, glare, angle, partly covered, unusual artwork, or you counted marks and aren't sure of the count), and give your next most likely readings in "alternatives". Never guess silently: a wrong confident read costs someone money.
 
 Set "quality":
 - "ok" when every tile can be read, even if one or two are unsure.
@@ -148,14 +159,22 @@ function firstJson(text: string): unknown {
   return JSON.parse(text.slice(start, end + 1));
 }
 
-async function recognizeWithWorkersAI(env: Env, image: string): Promise<z.infer<typeof RecognizeSchema>> {
+/** What the app receives: just the tiles, without the model's working (suit / number). */
+interface Recognition {
+  quality: z.infer<typeof RecognizeSchema>['quality'];
+  problem: string | null;
+  tiles: { tile: string; sure: boolean; alternatives: string[] }[];
+  flowers: { tile: string; sure: boolean }[];
+}
+
+async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognition> {
   const run = env.AI.run.bind(env.AI) as unknown as (model: string, inputs: unknown) => Promise<{ choices?: { message?: { content?: string | null } }[]; response?: string }>;
   const out = await run(env.PHOTO_MODEL, {
     messages: [{
       role: 'user',
       content: [
         { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}`, detail: 'high' } },
-        { type: 'text', text: RECOGNIZE_PROMPT + '\n\nReply with only a JSON object with keys "quality", "problem", "tiles" (each {"tile","sure","alternatives"}) and "flowers" (each {"tile","sure"}), using the tile ids above.' },
+        { type: 'text', text: RECOGNIZE_PROMPT + '\n\nReply with only a JSON object with these keys, in this order: "quality", "problem", "totalTiles", "flowers" (each {"tile","sure"}), "tiles" (each {"suit","number","tile","sure","alternatives"}), using the tile ids above.' },
       ],
     }],
     response_format: { type: 'json_schema', json_schema: { name: 'hand', schema: z.toJSONSchema(RecognizeSchema) } },
@@ -170,7 +189,7 @@ async function recognizeWithWorkersAI(env: Env, image: string): Promise<z.infer<
       : []);
   const flowers = (Array.isArray(raw.flowers) ? raw.flowers : []).flatMap((f: { tile?: string; sure?: boolean }) =>
     f && typeof f.tile === 'string' && FLOWER_SET.has(f.tile) ? [{ tile: f.tile, sure: f.sure !== false }] : []);
-  const quality = ['ok', 'blurry', 'dark', 'partial', 'no_tiles'].includes(raw.quality as string) ? raw.quality as z.infer<typeof RecognizeSchema>['quality'] : 'ok';
+  const quality = ['ok', 'blurry', 'dark', 'partial', 'no_tiles'].includes(raw.quality as string) ? raw.quality as Recognition['quality'] : 'ok';
   return { quality, problem: typeof raw.problem === 'string' ? raw.problem : null, tiles, flowers };
 }
 
