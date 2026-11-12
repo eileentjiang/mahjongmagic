@@ -122,10 +122,10 @@ export function Camera() {
   );
 }
 
-export const GRID_COLS = 3;
-export const GRID_ROWS = 6;
-const TILE_ASPECT = 3 / 4; // width / height of one tile
-const GRID_ASPECT = (GRID_COLS * TILE_ASPECT) / GRID_ROWS;
+// Box shape (width / height): about 4 tiles across by 5 down, so a hand sits compactly.
+const GRID_ASPECT = 0.6;
+// Every photo sends about this many pixels whatever the box shape, so the cost per photo stays the same (~575 image tokens).
+const PIXEL_BUDGET = 430_000;
 const MARGIN = 0.08; // crop a little outside the outlines, in case tiles sit slightly off
 
 /** Live camera with a tile-outline guide; capture() returns just the guide area as base64 JPEG. */
@@ -158,7 +158,7 @@ function useLiveCamera() {
     return () => ro.disconnect();
   }, [status]);
 
-  const gh = Math.min(box.h * 0.86, (box.w * 0.82) / GRID_ASPECT);
+  const gh = Math.min(box.h * 0.8, (box.w * 0.86) / GRID_ASPECT);
   const gw = gh * GRID_ASPECT;
   const guide = { x: (box.w - gw) / 2, y: (box.h - gh) / 2 - 10, w: gw, h: gh };
 
@@ -173,7 +173,7 @@ function useLiveCamera() {
     let sw = (guide.w + 2 * m) / scale, sh = (guide.h + 2 * m) / scale;
     sx = Math.max(0, sx); sy = Math.max(0, sy);
     sw = Math.min(v.videoWidth - sx, sw); sh = Math.min(v.videoHeight - sy, sh);
-    const out = Math.min(1, 1024 / Math.max(sw, sh));
+    const out = Math.min(1, Math.sqrt(PIXEL_BUDGET / (sw * sh)));
     const c = document.createElement('canvas');
     c.width = Math.round(sw * out); c.height = Math.round(sh * out);
     c.getContext('2d')!.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
