@@ -23,7 +23,7 @@ export function Header({ title, kicker, back = true, right }: { title: ReactNode
   const nav = useNav();
   return (
     <header className="header">
-      {back ? <button type="button" className="icon-btn" aria-label="Back" onClick={nav.back}><Icon.back /></button> : <span style={{ width: 12 }} />}
+      {back ? <button type="button" className="icon-btn" aria-label="Back" onClick={nav.sheet ? nav.closeSheet : nav.back}><Icon.back /></button> : <span style={{ width: 12 }} />}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
         {kicker && <span className="kicker">{kicker}</span>}
         <h1>{title}</h1>

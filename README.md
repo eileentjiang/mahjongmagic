@@ -2,7 +2,7 @@
 
 Mahjong scoring and payouts for a friendly game night: enter the winning hand, see every scoring pattern and who pays what, and settle up at the end.
 
-- Product: [`docs/PRD.md`](docs/PRD.md) · Tech spec: [`docs/SPEC.md`](docs/SPEC.md)
+- Product: [`docs/PRD.md`](docs/PRD.md) · Tech spec: [`docs/SPEC.md`](docs/SPEC.md) · Design: [`docs/DESIGN.md`](docs/DESIGN.md)
 - Rules: Hong Kong style (MCR) with the owner's House default rules ([`docs/variants`](docs/variants))
 
 ## Run it

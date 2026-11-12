@@ -152,7 +152,7 @@ export function useStore(): Store {
 export type Route =
   | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about'
   | 'rulesEdit' | 'playersEdit';
-export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | null;
+export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | 'rulesFine' | null;
 
 interface NavState { stack: Route[]; sheet: SheetName; sheetArg: number }
 interface Nav extends NavState {

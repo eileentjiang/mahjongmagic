@@ -1,6 +1,6 @@
 # Mahjong Magic: technical spec (stage 1)
 
-Companion to [PRD.md](./PRD.md). This covers how stage 1 is built: one phone keeps score, hands are entered by tapping tiles, and the app is a static site on GitHub Pages.
+Companion to [PRD.md](./PRD.md) and [DESIGN.md](./DESIGN.md). This covers how stage 1 is built: one phone keeps score, hands are entered by tapping tiles, and the app is a static site on GitHub Pages.
 
 ## Stages
 | Stage | Ships | Needs from the owner |

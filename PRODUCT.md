@@ -83,5 +83,5 @@ The name "Mahjong Magic" is the only commitment. Voice, logo and visual identity
 
 - Phone in portrait, readable at arm's length: high-contrast text, and dark mode follows the system setting.
 - Tap targets of at least 44px; no horizontal scroll at 360px.
-- Money uses a +/− sign as well as colour, never colour alone.
+- Money uses a +/− sign as well as color, never color alone.
 - Winds, flowers and tiles always show the Chinese character and the English name together, for players who don't read Chinese.
