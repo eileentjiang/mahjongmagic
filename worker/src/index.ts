@@ -3,7 +3,7 @@
 //   POST /recognize  { image: base64 JPEG }   -> tiles read from a photo of a winning hand
 //   POST /rule       { text: string }          -> a plain-language house rule turned into a checkable rule
 import Anthropic from '@anthropic-ai/sdk';
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 
 export interface Env {
@@ -112,17 +112,16 @@ function json(body: unknown, status: number, origin: string | null): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors(origin) } });
 }
 
-async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.Beta.BetaContentBlockParam[]): Promise<T> {
+async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.ContentBlockParam[], declined: string): Promise<T> {
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 1 });
-  const response = await client.beta.messages.parse({
+  // No refusal fallback on purpose (owner's choice, to keep costs down): a declined request is shown to the player.
+  const response = await client.messages.parse({
     model: MODEL,
     max_tokens: 16000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    output_config: { effort: 'medium', format: betaZodOutputFormat(schema) },
+    output_config: { effort: 'medium', format: zodOutputFormat(schema) },
     messages: [{ role: 'user', content }],
   });
-  if (response.stop_reason === 'refusal') throw new UserError('The photo couldn’t be read. Try again, or enter the tiles by hand.');
+  if (response.stop_reason === 'refusal') throw new UserError(declined);
   if (!response.parsed_output) throw new Error(`No parsed output (stop_reason ${response.stop_reason})`);
   return response.parsed_output as T;
 }
@@ -145,12 +144,12 @@ export default {
         const result = await ask(env, RecognizeSchema, [
           { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: body.image } },
           { type: 'text', text: RECOGNIZE_PROMPT },
-        ]);
+        ], 'Claude declined to read this photo. Try another photo, or enter the tiles by hand.');
         return json(result, 200, origin);
       }
       if (path === '/rule') {
         if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > 600) return json({ error: 'Describe the rule in up to 600 characters.' }, 400, origin);
-        const result = await ask(env, RuleSchema, [{ type: 'text', text: RULE_PROMPT(body.text.trim()) }]);
+        const result = await ask(env, RuleSchema, [{ type: 'text', text: RULE_PROMPT(body.text.trim()) }], 'Claude declined to read this rule. Try wording it differently.');
         return json(result, 200, origin);
       }
       return json({ error: 'Not found' }, 404, origin);
