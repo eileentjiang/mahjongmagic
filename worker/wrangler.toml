@@ -11,3 +11,10 @@ class_name = "SessionRoom"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["SessionRoom"]
+
+# Photos are read by Cloudflare Workers AI (free daily allowance). Change the model here.
+[ai]
+binding = "AI"
+
+[vars]
+PHOTO_MODEL = "@cf/moonshotai/kimi-k2.6"

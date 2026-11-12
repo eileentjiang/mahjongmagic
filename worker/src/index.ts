@@ -12,6 +12,10 @@ import { apply, expireLock, newRoom, Op, RoomSession, RoomState } from './room';
 export interface Env {
   ANTHROPIC_API_KEY: string;
   ROOMS: DurableObjectNamespace<SessionRoom>;
+  /** Cloudflare Workers AI: free daily allowance, used for photos. */
+  AI: Ai;
+  /** Which Workers AI model reads photos (set in wrangler.toml). */
+  PHOTO_MODEL: string;
 }
 
 // Sonnet 5.5 at low effort: about a quarter of the cost of Opus 5.5 at medium (owner's choice, to keep photos cheap).
@@ -133,6 +137,43 @@ async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.Content
 
 class UserError extends Error {}
 
+// ---------- Photos on Cloudflare Workers AI (free allowance)
+const TILE_SET = new Set<string>(TILE_IDS);
+const FLOWER_SET = new Set<string>(FLOWER_IDS);
+
+/** Pull the first JSON object out of a model reply (some models wrap it in ``` fences or add a sentence). */
+function firstJson(text: string): unknown {
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  if (start < 0 || end <= start) throw new UserError('Couldn’t read the tiles. Try again, or enter them by hand.');
+  return JSON.parse(text.slice(start, end + 1));
+}
+
+async function recognizeWithWorkersAI(env: Env, image: string): Promise<z.infer<typeof RecognizeSchema>> {
+  const run = env.AI.run.bind(env.AI) as unknown as (model: string, inputs: unknown) => Promise<{ choices?: { message?: { content?: string | null } }[]; response?: string }>;
+  const out = await run(env.PHOTO_MODEL, {
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}`, detail: 'high' } },
+        { type: 'text', text: RECOGNIZE_PROMPT + '\n\nReply with only a JSON object with keys "quality", "problem", "tiles" (each {"tile","sure","alternatives"}) and "flowers" (each {"tile","sure"}), using the tile ids above.' },
+      ],
+    }],
+    response_format: { type: 'json_schema', json_schema: { name: 'hand', schema: z.toJSONSchema(RecognizeSchema) } },
+    max_tokens: 4000,
+  });
+  const text = out.choices?.[0]?.message?.content ?? out.response ?? '';
+  const raw = firstJson(text) as Record<string, unknown>;
+  // Open models sometimes invent ids: keep what's valid, and flag the hand as unsure rather than failing.
+  const tiles = (Array.isArray(raw.tiles) ? raw.tiles : []).flatMap((t: { tile?: string; sure?: boolean; alternatives?: string[] }) =>
+    t && typeof t.tile === 'string' && TILE_SET.has(t.tile)
+      ? [{ tile: t.tile, sure: t.sure !== false, alternatives: (t.alternatives ?? []).filter((a) => TILE_SET.has(a)) }]
+      : []);
+  const flowers = (Array.isArray(raw.flowers) ? raw.flowers : []).flatMap((f: { tile?: string; sure?: boolean }) =>
+    f && typeof f.tile === 'string' && FLOWER_SET.has(f.tile) ? [{ tile: f.tile, sure: f.sure !== false }] : []);
+  const quality = ['ok', 'blurry', 'dark', 'partial', 'no_tiles'].includes(raw.quality as string) ? raw.quality as z.infer<typeof RecognizeSchema>['quality'] : 'ok';
+  return { quality, problem: typeof raw.problem === 'string' ? raw.problem : null, tiles, flowers };
+}
+
 // ---------- Shared sessions
 const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVWXYZ'; // no I, O or Q: easy to read aloud and type
 
@@ -234,10 +275,7 @@ export default {
       if (path === '/recognize') {
         if (typeof body.image !== 'string' || !body.image) return json({ error: 'Missing image' }, 400, origin);
         if (body.image.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Photo too large' }, 413, origin);
-        const result = await ask(env, RecognizeSchema, [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: body.image } },
-          { type: 'text', text: RECOGNIZE_PROMPT },
-        ], 'Claude declined to read this photo. Try another photo, or enter the tiles by hand.');
+        const result = await recognizeWithWorkersAI(env, body.image);
         return json(result, 200, origin);
       }
       if (path === '/rule') {
@@ -251,7 +289,8 @@ export default {
       if (e instanceof Anthropic.RateLimitError) return json({ error: 'Too many requests right now. Try again in a minute.' }, 429, origin);
       if (e instanceof Anthropic.AuthenticationError) return json({ error: 'The server’s API key isn’t working.' }, 500, origin);
       if (e instanceof Anthropic.APIError) return json({ error: 'The recognition service had a problem. Try again.' }, 502, origin);
-      return json({ error: 'Something went wrong. Try again.' }, 500, origin);
+      console.error(e);
+      return json({ error: 'Couldn’t read the photo just now. Try again, or enter the tiles by hand.' }, 500, origin);
     }
   },
 };
