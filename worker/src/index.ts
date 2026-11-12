@@ -16,8 +16,11 @@ export interface Env {
   STATS: DurableObjectNamespace<PhotoStats>;
   /** Cloudflare Workers AI: free daily allowance, used for photos. */
   AI: Ai;
-  /** Which Workers AI model reads photos (set in wrangler.toml). */
+  /** Which Workers AI model reads photos when Gemini isn't available (set in wrangler.toml). */
   PHOTO_MODEL: string;
+  /** Google Gemini: the main photo reader when a key is set. */
+  GEMINI_API_KEY?: string;
+  GEMINI_MODEL: string;
 }
 
 // Sonnet 5.5 at low effort: about a quarter of the cost of Opus 5.5 at medium (owner's choice, to keep photos cheap).
@@ -176,8 +179,15 @@ const BACKUP_PHOTO_MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct';
 class PhotoError extends Error { constructor(message: string, readonly detail: string) { super(message); } }
 
 async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognition & { model: string }> {
-  const models = [...new Set([env.PHOTO_MODEL, BACKUP_PHOTO_MODEL])];
   const problems: string[] = [];
+  if (env.GEMINI_API_KEY) {
+    try {
+      return { ...(await readWithGemini(env, image)), model: `gemini/${env.GEMINI_MODEL}` };
+    } catch (e) {
+      problems.push(`${env.GEMINI_MODEL}: ${(e as Error).message}`.slice(0, 300));
+    }
+  }
+  const models = [...new Set([env.PHOTO_MODEL, BACKUP_PHOTO_MODEL])];
   for (const model of models) {
     try {
       return { ...(await readWith(env, model, image)), model };
@@ -196,7 +206,7 @@ async function readWith(env: Env, model: string, image: string): Promise<Recogni
       role: 'user',
       content: [
         { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } },
-        { type: 'text', text: RECOGNIZE_PROMPT + '\n\nReply with only a JSON object with these keys, in this order: "quality", "problem", "totalTiles", "flowers" (each {"tile","sure"}), "tiles" (each {"suit","number","tile","sure","alternatives"}), using the tile ids above.' },
+        { type: 'text', text: RECOGNIZE_PROMPT + '\n\n' + ANSWER_FORMAT },
       ],
     }],
     max_tokens: 6000,
@@ -206,7 +216,37 @@ async function readWith(env: Env, model: string, image: string): Promise<Recogni
   if (model.includes('kimi')) { inputs.reasoning_effort = 'none'; inputs.chat_template_kwargs = { enable_thinking: false }; }
   const out = await run(model, inputs);
   const reply = out.choices?.[0]?.message?.content ?? out.response ?? '';
-  const raw = (typeof reply === 'object' && reply ? reply : firstJson(String(reply))) as Record<string, unknown>;
+  return toRecognition((typeof reply === 'object' && reply ? reply : firstJson(String(reply))) as Record<string, unknown>);
+}
+
+const ANSWER_FORMAT = 'Reply with only a JSON object with these keys, in this order: "quality", "problem", "totalTiles", "flowers" (each {"tile","sure"}), "tiles" (each {"suit","number","tile","sure","alternatives"}), using the tile ids above.';
+
+/** Google Gemini via its REST API (the key stays on this server). */
+async function readWithGemini(env: Env, image: string): Promise<Recognition> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY! },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [
+        { inline_data: { mime_type: 'image/jpeg', data: image } },
+        { text: RECOGNIZE_PROMPT + '\n\n' + ANSWER_FORMAT },
+      ] }],
+      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 8192 },
+    }),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: { message?: string; status?: string };
+    candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
+  };
+  if (!res.ok) throw new Error(`${res.status} ${data.error?.status ?? ''} ${data.error?.message ?? ''}`.trim());
+  const text = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('');
+  if (!text) throw new Error(`empty reply (${data.candidates?.[0]?.finishReason ?? 'no candidates'})`);
+  return toRecognition(firstJson(text) as Record<string, unknown>);
+}
+
+/** Turn a model's JSON into what the app needs, keeping only valid tile ids. */
+function toRecognition(raw: Record<string, unknown>): Recognition {
   // Open models sometimes invent ids: keep what's valid, and flag the hand as unsure rather than failing.
   const tiles = (Array.isArray(raw.tiles) ? raw.tiles : []).flatMap((t: { tile?: string; sure?: boolean; alternatives?: string[] }) =>
     t && typeof t.tile === 'string' && TILE_SET.has(t.tile)
