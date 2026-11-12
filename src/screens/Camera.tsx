@@ -68,11 +68,9 @@ export function Camera() {
       {live.status === 'on' && phase.kind !== 'reading' ? (
         <div ref={live.boxRef} style={{ position: 'relative', flexGrow: 1, overflow: 'hidden', minHeight: 320 }}>
           <video ref={live.videoRef} autoPlay playsInline muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          {/* Faint tile outlines: lay the hand in rows of 3. Only this area (plus a little margin) is sent. */}
-          <div aria-hidden="true" style={{ position: 'absolute', left: live.guide.x, top: live.guide.y, width: live.guide.w, height: live.guide.h, display: 'grid', gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`, gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`, gap: 3, boxShadow: '0 0 0 9999px rgba(22,26,26,0.45)' }}>
-            {Array.from({ length: GRID_COLS * GRID_ROWS }, (_, k) => <span key={k} style={{ border: '1.5px solid rgba(251,248,239,0.55)', borderRadius: 4 }} />)}
-          </div>
-          <p style={{ position: 'absolute', left: 0, right: 0, bottom: 8, margin: 0, textAlign: 'center', fontSize: 13, fontWeight: 600, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>Line the tiles up in the outlines, rows of 3, flowers included</p>
+          {/* The area that gets sent (plus a little margin); everything outside is dimmed. */}
+          <div aria-hidden="true" style={{ position: 'absolute', left: live.guide.x, top: live.guide.y, width: live.guide.w, height: live.guide.h, border: '2px solid rgba(251,248,239,0.7)', borderRadius: 8, boxShadow: '0 0 0 9999px rgba(22,26,26,0.45)' }} />
+          <p style={{ position: 'absolute', left: 0, right: 0, bottom: 8, margin: 0, textAlign: 'center', fontSize: 13, fontWeight: 600, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>Consolidate tiles in the indicated area</p>
         </div>
       ) : (
         <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '0 24px', textAlign: 'center' }}>
@@ -96,10 +94,7 @@ export function Camera() {
           style={{ width: 78, height: 78, borderRadius: 39, border: '3px solid #FBF8EF', background: 'transparent', padding: 5, opacity: phase.kind === 'reading' ? 0.4 : 1 }}>
           <span style={{ display: 'block', width: '100%', height: '100%', borderRadius: '50%', background: '#FBF8EF' }} />
         </button>
-        <div style={{ display: 'flex', gap: 20 }}>
-          <button type="button" className="link-btn" style={{ color: '#FBF8EF', fontWeight: 500 }} onClick={byHand}>Enter tiles by hand</button>
-          {live.status === 'on' && <button type="button" className="link-btn" style={{ color: '#FBF8EF', fontWeight: 500 }} onClick={pickFile}>Use a saved photo</button>}
-        </div>
+        <button type="button" className="link-btn" style={{ color: '#FBF8EF', fontWeight: 500 }} onClick={byHand}>Enter tiles by hand instead</button>
       </footer>
 
       {(phase.kind === 'rejected' || phase.kind === 'error') && (
