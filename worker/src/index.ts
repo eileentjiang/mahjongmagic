@@ -8,10 +8,16 @@ import { z } from 'zod';
 
 import { DurableObject } from 'cloudflare:workers';
 import { apply, expireLock, newRoom, Op, RoomSession, RoomState } from './room';
+import { addTo, compare, emptyStats, Feedback, ModelStats } from './feedback';
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
   ROOMS: DurableObjectNamespace<SessionRoom>;
+  STATS: DurableObjectNamespace<PhotoStats>;
+  /** Cloudflare Workers AI: free daily allowance, used for photos. */
+  AI: Ai;
+  /** Which Workers AI model reads photos (set in wrangler.toml). */
+  PHOTO_MODEL: string;
 }
 
 // Sonnet 5.5 at low effort: about a quarter of the cost of Opus 5.5 at medium (owner's choice, to keep photos cheap).
@@ -36,24 +42,35 @@ const TILE_GUIDE = `Tile ids:
 - Flowers (plum 梅 1, orchid 蘭 2, chrysanthemum 菊 3, bamboo 竹 4): f1-f4. Seasons (spring 春 1, summer 夏 2, autumn 秋 3, winter 冬 4): x1-x4. They usually carry a small number in a corner.`;
 
 // ---------- /recognize
+// Field order matters: models write the answer top to bottom, so this order makes them
+// count first, set flowers aside, then read each tile's suit before its number.
 const RecognizeSchema = z.object({
   quality: z.enum(['ok', 'blurry', 'dark', 'partial', 'no_tiles']),
   problem: z.string().nullable(),
+  totalTiles: z.number().int(),
+  flowers: z.array(z.object({ tile: z.enum(FLOWER_IDS), sure: z.boolean() })),
   tiles: z.array(z.object({
+    suit: z.enum(['characters', 'dots', 'bamboo', 'wind', 'dragon']),
+    number: z.number().int().nullable(),
     tile: z.enum(TILE_IDS),
     sure: z.boolean(),
     alternatives: z.array(z.enum(TILE_IDS)),
   })),
-  flowers: z.array(z.object({ tile: z.enum(FLOWER_IDS), sure: z.boolean() })),
 });
 
 const RECOGNIZE_PROMPT = `This is a photo of a winning mahjong hand (Hong Kong / Chinese style, 144-tile set), laid out on a table so it can be scored.
 
 ${TILE_GUIDE}
 
-List every tile in the hand, left to right and row by row: concealed tiles and melded sets alike, all four tiles of any kong, and the winning tile. A normal hand has 14 tiles plus one extra per kong. Put flower and season tiles in "flowers", not "tiles". Ignore tiles that are clearly not part of this hand (discards, the wall, other players' tiles).
+Work through the photo in this order:
+1. Count. Count every tile in the hand: concealed tiles and melded sets alike, all four tiles of any kong, the winning tile, and any flowers or seasons. Put that number in "totalTiles". Ignore tiles that are clearly not part of this hand (discards, the wall, other players' tiles).
+2. Set flowers aside. Find the flower and season tiles (a plant or season picture, usually with a small number 1-4 in a corner) and list them in "flowers". They don't go in "tiles".
+3. Read each remaining tile, left to right and row by row, in two steps:
+   a. Suit first: "characters" (a character over 萬), "dots" (circles), "bamboo" (sticks, or a bird or decorated stalk for the 1), "wind" (東 南 西 北) or "dragon" (中, 發, or a blank or framed tile).
+   b. Then the number: for dots and bamboo, count the circles or sticks one by one; for characters, read the number character above 萬 (一二三四五/伍六七八九). Put it in "number" (null for winds and dragons), then give the tile id in "tile".
+   A normal hand is 14 tiles plus one per kong, not counting flowers. If your list doesn't add up, look again before answering.
 
-For each tile, set "sure" to false if you can't be certain (blur, glare, angle, partly covered, unusual artwork), and give your next most likely readings in "alternatives". Never guess silently: a wrong confident read costs someone money.
+For each tile, set "sure" to false if you can't be certain (blur, glare, angle, partly covered, unusual artwork, or you counted marks and aren't sure of the count), and give your next most likely readings in "alternatives". Never guess silently: a wrong confident read costs someone money.
 
 Set "quality":
 - "ok" when every tile can be read, even if one or two are unsure.
@@ -109,7 +126,7 @@ If the rule depends on something the app can't know from the hand and these game
 
 function cors(origin: string | null): Record<string, string> {
   return origin && ALLOWED_ORIGINS.includes(origin)
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' }
     : {};
 }
 
@@ -133,6 +150,51 @@ async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.Content
 
 class UserError extends Error {}
 
+// ---------- Photos on Cloudflare Workers AI (free allowance)
+const TILE_SET = new Set<string>(TILE_IDS);
+const FLOWER_SET = new Set<string>(FLOWER_IDS);
+
+/** Pull the first JSON object out of a model reply (some models wrap it in ``` fences or add a sentence). */
+function firstJson(text: string): unknown {
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  if (start < 0 || end <= start) throw new UserError('Couldn’t read the tiles. Try again, or enter them by hand.');
+  return JSON.parse(text.slice(start, end + 1));
+}
+
+/** What the app receives: just the tiles, without the model's working (suit / number). */
+interface Recognition {
+  quality: z.infer<typeof RecognizeSchema>['quality'];
+  problem: string | null;
+  tiles: { tile: string; sure: boolean; alternatives: string[] }[];
+  flowers: { tile: string; sure: boolean }[];
+}
+
+async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognition> {
+  const run = env.AI.run.bind(env.AI) as unknown as (model: string, inputs: unknown) => Promise<{ choices?: { message?: { content?: string | null } }[]; response?: string }>;
+  const out = await run(env.PHOTO_MODEL, {
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}`, detail: 'high' } },
+        { type: 'text', text: RECOGNIZE_PROMPT + '\n\nReply with only a JSON object with these keys, in this order: "quality", "problem", "totalTiles", "flowers" (each {"tile","sure"}), "tiles" (each {"suit","number","tile","sure","alternatives"}), using the tile ids above.' },
+      ],
+    }],
+    response_format: { type: 'json_schema', json_schema: { name: 'hand', schema: z.toJSONSchema(RecognizeSchema) } },
+    max_tokens: 4000,
+  });
+  const text = out.choices?.[0]?.message?.content ?? out.response ?? '';
+  const raw = firstJson(text) as Record<string, unknown>;
+  // Open models sometimes invent ids: keep what's valid, and flag the hand as unsure rather than failing.
+  const tiles = (Array.isArray(raw.tiles) ? raw.tiles : []).flatMap((t: { tile?: string; sure?: boolean; alternatives?: string[] }) =>
+    t && typeof t.tile === 'string' && TILE_SET.has(t.tile)
+      ? [{ tile: t.tile, sure: t.sure !== false, alternatives: (t.alternatives ?? []).filter((a) => TILE_SET.has(a)) }]
+      : []);
+  const flowers = (Array.isArray(raw.flowers) ? raw.flowers : []).flatMap((f: { tile?: string; sure?: boolean }) =>
+    f && typeof f.tile === 'string' && FLOWER_SET.has(f.tile) ? [{ tile: f.tile, sure: f.sure !== false }] : []);
+  const quality = ['ok', 'blurry', 'dark', 'partial', 'no_tiles'].includes(raw.quality as string) ? raw.quality as Recognition['quality'] : 'ok';
+  return { quality, problem: typeof raw.problem === 'string' ? raw.problem : null, tiles, flowers };
+}
+
 // ---------- Shared sessions
 const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVWXYZ'; // no I, O or Q: easy to read aloud and type
 
@@ -149,6 +211,29 @@ async function createRoom(request: Request, env: Env, origin: string | null): Pr
     if (res.status === 200) return json({ code }, 200, origin);
   }
   return json({ error: 'Couldn’t create a code. Try again.' }, 503, origin);
+}
+
+/** Running photo-accuracy totals per model, plus the most recent comparisons. */
+export class PhotoStats extends DurableObject<Env> {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const byModel = (await this.ctx.storage.get<Record<string, ModelStats>>('byModel')) ?? {};
+    if (url.pathname === '/get') {
+      const recent = (await this.ctx.storage.get<unknown[]>('recent')) ?? [];
+      return Response.json({ byModel, recent: recent.slice(-50) });
+    }
+    let f: Feedback;
+    try { f = await request.json(); } catch { return Response.json({ error: 'Bad feedback' }, { status: 400 }); }
+    const isList = (v: unknown, n: number) => Array.isArray(v) && v.length <= n;
+    if (typeof f?.model !== 'string' || f.model.length > 100 || !isList(f.read, 30) || !isList(f.final, 30) || !isList(f.flowersRead, 8) || !isList(f.flowersFinal, 8))
+      return Response.json({ error: 'Bad feedback' }, { status: 400 });
+    const c = compare(f);
+    byModel[f.model] = addTo(byModel[f.model] ?? emptyStats(), c);
+    const recent = (await this.ctx.storage.get<unknown[]>('recent')) ?? [];
+    recent.push({ at: Date.now(), model: f.model, read: f.read, final: f.final, flowersRead: f.flowersRead, flowersFinal: f.flowersFinal, ...c });
+    await this.ctx.storage.put({ byModel, recent: recent.slice(-500) });
+    return Response.json({ ok: true, ...c });
+  }
 }
 
 /** One shared session. Holds the authoritative copy and relays every change to every phone. */
@@ -226,6 +311,16 @@ export default {
       return env.ROOMS.get(env.ROOMS.idFromName(ws[1])).fetch(request);
     }
     if (path === '/session' && request.method === 'POST') return createRoom(request, env, origin);
+    // Photo accuracy: corrections in (tile names only), totals out.
+    const stats = env.STATS.get(env.STATS.idFromName('all'));
+    if (path === '/feedback' && request.method === 'POST') {
+      const res = await stats.fetch('https://stats/add', { method: 'POST', body: await request.text() });
+      return json(await res.json(), res.status, origin);
+    }
+    if (path === '/stats' && request.method === 'GET') {
+      const res = await stats.fetch('https://stats/get');
+      return json(await res.json(), 200, origin);
+    }
 
     if (request.method !== 'POST') return json({ error: 'Use POST' }, 405, origin);
 
@@ -234,11 +329,8 @@ export default {
       if (path === '/recognize') {
         if (typeof body.image !== 'string' || !body.image) return json({ error: 'Missing image' }, 400, origin);
         if (body.image.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Photo too large' }, 413, origin);
-        const result = await ask(env, RecognizeSchema, [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: body.image } },
-          { type: 'text', text: RECOGNIZE_PROMPT },
-        ], 'Claude declined to read this photo. Try another photo, or enter the tiles by hand.');
-        return json(result, 200, origin);
+        const result = await recognizeWithWorkersAI(env, body.image);
+        return json({ ...result, model: env.PHOTO_MODEL }, 200, origin);
       }
       if (path === '/rule') {
         if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > 600) return json({ error: 'Describe the rule in up to 600 characters.' }, 400, origin);
@@ -251,7 +343,8 @@ export default {
       if (e instanceof Anthropic.RateLimitError) return json({ error: 'Too many requests right now. Try again in a minute.' }, 429, origin);
       if (e instanceof Anthropic.AuthenticationError) return json({ error: 'The server’s API key isn’t working.' }, 500, origin);
       if (e instanceof Anthropic.APIError) return json({ error: 'The recognition service had a problem. Try again.' }, 502, origin);
-      return json({ error: 'Something went wrong. Try again.' }, 500, origin);
+      console.error(e);
+      return json({ error: 'Couldn’t read the photo just now. Try again, or enter the tiles by hand.' }, 500, origin);
     }
   },
 };

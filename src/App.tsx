@@ -13,6 +13,7 @@ import { About } from './screens/About';
 import { Camera } from './screens/Camera';
 import { Unsure } from './screens/Unsure';
 import { Claim, Join } from './screens/Sharing';
+import { Accuracy } from './screens/Accuracy';
 import { useEffect, useState } from 'react';
 import { deviceId } from './state/sync';
 
@@ -55,6 +56,7 @@ function Screen() {
     case 'about': return <About />;
     case 'join': return <Join />;
     case 'claim': return <Claim />;
+    case 'accuracy': return <Accuracy />;
   }
 }
 

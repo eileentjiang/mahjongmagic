@@ -5,6 +5,8 @@ import type { TileId } from './engine/tiles';
 export const SERVER: string = import.meta.env.VITE_SERVER ?? 'https://mahjong-magic.eileentjiang.workers.dev';
 
 export interface Recognition {
+  /** Which model read the photo (for accuracy tracking). */
+  model?: string;
   quality: 'ok' | 'blurry' | 'dark' | 'partial' | 'no_tiles';
   problem: string | null;
   tiles: { tile: TileId; sure: boolean; alternatives: TileId[] }[];
@@ -50,6 +52,21 @@ export async function photoToJpeg(file: File): Promise<string> {
 }
 
 export const recognize = (image: string) => post<Recognition>('/recognize', { image }, 90_000);
+
+/** Report what the photo reader said versus what the players confirmed. Tile names only, never the photo. */
+export function sendFeedback(f: { model: string; read: { tile: TileId; sure: boolean }[]; final: TileId[]; flowersRead: TileId[]; flowersFinal: TileId[] }) {
+  return post('/feedback', f, 15_000).catch(() => { /* best effort: never get in the way of scoring */ });
+}
+
+export interface ModelStats {
+  photos: number; tiles: number; wrong: number; silentWrong: number; flagged: number; flaggedWrong: number;
+  missed: number; extra: number; flowersWrong: number; perfectPhotos: number; confusions: Record<string, number>;
+}
+export async function getStats(): Promise<Record<string, ModelStats>> {
+  const res = await fetch(SERVER + '/stats').catch(() => { throw new Error('Couldn’t reach the server.'); });
+  if (!res.ok) throw new Error('Couldn’t load the numbers.');
+  return ((await res.json()) as { byModel: Record<string, ModelStats> }).byModel;
+}
 export const readRule = (text: string) => post<RuleReading>('/rule', { text }, 60_000);
 
 export type { CustomRule };

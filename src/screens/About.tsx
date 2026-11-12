@@ -1,6 +1,8 @@
 import { Header, Icon } from '../components/ui';
+import { useNav } from '../state/store';
 
 export function About() {
+  const nav = useNav();
   return (
     <div className="app">
       <Header title="About" />
@@ -25,7 +27,8 @@ export function About() {
           <span>Feedback? Contact me</span><Icon.arrow />
         </a>
       </div>
-      <footer style={{ padding: '14px 24px calc(30px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--divider)', textAlign: 'center' }}>
+      <footer style={{ padding: '14px 24px calc(30px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--divider)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button type="button" className="link-btn muted" style={{ fontSize: 13, fontWeight: 500, textDecoration: 'underline' }} onClick={() => nav.go('accuracy')}>Photo accuracy</button>
         <span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>© Eileen Jiang</span>
       </footer>
     </div>

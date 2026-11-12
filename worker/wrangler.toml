@@ -8,6 +8,21 @@ workers_dev = true
 name = "ROOMS"
 class_name = "SessionRoom"
 
+[[durable_objects.bindings]]
+name = "STATS"
+class_name = "PhotoStats"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["SessionRoom"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["PhotoStats"]
+
+# Photos are read by Cloudflare Workers AI (free daily allowance). Change the model here.
+[ai]
+binding = "AI"
+
+[vars]
+PHOTO_MODEL = "@cf/moonshotai/kimi-k2.6"
