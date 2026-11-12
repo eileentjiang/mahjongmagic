@@ -176,7 +176,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **One shared ledger.** Confirming a game (or a kong or a draw) updates **every phone**, live. Nobody updates scores separately.
 - **One scorer at a time.** While someone is scoring, other phones show "Chloe is scoring game 6…" and their Score button is paused, so a game can't be entered twice.
 - **Anyone can view** standings, history and their own "My seat" card at any time.
-- No accounts: a phone is remembered for that session only.
+- No accounts: a phone is remembered for that session only. The server keeps a shared session's copy only to keep phones in sync, and deletes it 60 days after its last activity.
 
 **Navigation during a session:** a bottom tab bar with three items: **Table**, **Score a win** (the large center button, which opens the camera directly, so a fluent player is one tap from snapping the hand), and **Standings**. Everything else (Home, Rules, Players, About, End session) lives in the **⋯ menu** on the Table screen.
 

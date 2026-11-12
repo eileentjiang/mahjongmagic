@@ -151,7 +151,18 @@ async function createRoom(request: Request, env: Env, origin: string | null): Pr
 }
 
 /** One shared session. Holds the authoritative copy and relays every change to every phone. */
+/** A shared session is deleted this long after its last activity (a change or a phone connecting). */
+const ROOM_TTL_MS = 60 * 24 * 60 * 60 * 1000;
+
 export class SessionRoom extends DurableObject<Env> {
+  private touch() { return this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS); }
+
+  /** Runs when the 60 days are up: delete everything, unless a phone is still connected. */
+  async alarm() {
+    if (this.ctx.getWebSockets().length > 0) { await this.touch(); return; }
+    await this.ctx.storage.deleteAll();
+  }
+
   private async load(): Promise<RoomState | undefined> { return this.ctx.storage.get<RoomState>('state'); }
 
   private devices(): Set<string> {
@@ -169,6 +180,7 @@ export class SessionRoom extends DurableObject<Env> {
       if (await this.load()) return new Response('taken', { status: 409 });
       const b = (await request.json()) as { code: string; session: RoomSession; device: string; seat: number | null };
       await this.ctx.storage.put('state', newRoom(b.code, { ...b.session, events: b.session.events ?? [] }, b.device, b.seat));
+      await this.touch();
       return new Response('ok');
     }
     const device = url.searchParams.get('device') ?? '';
@@ -178,6 +190,7 @@ export class SessionRoom extends DurableObject<Env> {
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
     this.ctx.acceptWebSocket(server);
+    await this.touch();
     server.serializeAttachment({ device });
     server.send(JSON.stringify({ type: 'state', state }));
     return new Response(null, { status: 101, webSocket: client });
@@ -195,6 +208,7 @@ export class SessionRoom extends DurableObject<Env> {
     if (!res.ok) { ws.send(JSON.stringify({ type: 'error', id: op.id, error: res.error, state })); return; }
     if (res.state !== state || res.state.version !== state.version) {
       await this.ctx.storage.put('state', res.state);
+      await this.touch();
       this.broadcast(res.state);
     }
     ws.send(JSON.stringify({ type: 'ack', id: op.id }));
