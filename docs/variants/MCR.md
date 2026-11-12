@@ -1,7 +1,7 @@
 # Variant reference: Chinese Official (MCR)
 
 **Source:** World Mahjong Organization, *Mahjong Competition Rules* (2014 English edition), the whole book: ch. 3 (rules of play, scoring, fouls) and appendices 1–10.
-In the app, this is the **base rulebook** for the variant labelled **"Hong Kong style (MCR rules)"**. The owner's group plays it with house rules on top: see [`GAME_NIGHT_DEFAULT.md`](./GAME_NIGHT_DEFAULT.md), which is the app's **default house profile**.
+In the app, this is the **base rulebook** for the variant labeled **"Hong Kong style (MCR rules)"**. The owner's group plays it with house rules on top: see [`GAME_NIGHT_DEFAULT.md`](./GAME_NIGHT_DEFAULT.md), which is the app's **default house profile**.
 
 > This file records every rule from the book that matters to the app, summarized in our own words so the PDF doesn't need to be committed (WMO copyright). Section refs (§) point back to the book for checking. Where the book's English looks like a mistranslation, it's flagged ⚠ and kept as written.
 

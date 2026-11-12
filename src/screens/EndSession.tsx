@@ -18,7 +18,7 @@ export function EndSession() {
     try {
       if (navigator.share) await navigator.share({ text: summary });
       else { await navigator.clipboard.writeText(summary); alert('Summary copied.'); }
-    } catch { /* cancelled */ }
+    } catch { /* canceled */ }
   };
   const sw = (i: number) => <span className="swatch" style={{ width: 14, height: 14, background: PLAYER_COLORS[i] }} />;
 

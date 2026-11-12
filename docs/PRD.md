@@ -178,7 +178,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **Anyone can view** standings, history and their own "My seat" card at any time.
 - No accounts: a phone is remembered for that session only.
 
-**Navigation during a session:** a bottom tab bar with three items: **Table**, **Score a win** (the large centre button, which opens the camera directly, so a fluent player is one tap from snapping the hand), and **Standings**. Everything else (Home, Rules, Players, About, End session) lives in the **⋯ menu** on the Table screen.
+**Navigation during a session:** a bottom tab bar with three items: **Table**, **Score a win** (the large center button, which opens the camera directly, so a fluent player is one tap from snapping the hand), and **Standings**. Everything else (Home, Rules, Players, About, End session) lives in the **⋯ menu** on the Table screen.
 
 **Cross-cutting:** every confirmed action is saved immediately: on the device, and to the shared session when one exists. A refresh, a closed tab, a locked phone or a dropped connection never loses the session; a phone that rejoins catches up automatically.
 
@@ -221,7 +221,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **"No winner (draw)"** opens a quick confirm: "Record a draw for game 6? No money moves · deal passes to Ben."
 
 ### 5.3 Scoring: calculate, track, and show to everyone
-1. When someone wins, any player taps **"Score a win"** (the centre tab). In a shared session the winner taps it on their own phone, and the app pre-selects them as the winner.
+1. When someone wins, any player taps **"Score a win"** (the center tab). In a shared session the winner taps it on their own phone, and the app pre-selects them as the winner.
 2. They **take a photo** of the winning hand (or tap **"Enter tiles manually"**).
 3. If the app is unsure about any tile, it **flashes what it picked up** and asks the user to confirm or fix the highlighted tiles. If it's confident, this step is skipped.
 4. They choose **who won** and **self-draw / discard (from whom)**.
@@ -305,7 +305,7 @@ Presets marked ★ are **on in the House default default profile**.
 ## 7. Constraints & conventions
 
 ### Rules (decided: MCR fan + House default house profile)
-The v1 variant is **WMO Mahjong Competition Rules (2014)**, labelled "Hong Kong style (MCR rules)" ([`variants/MCR.md`](./variants/MCR.md)). The default house profile is **House default** ([`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md)).
+The v1 variant is **WMO Mahjong Competition Rules (2014)**, labeled "Hong Kong style (MCR rules)" ([`variants/MCR.md`](./variants/MCR.md)). The default house profile is **House default** ([`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md)).
 
 | Question | House default default | Pure MCR | Preset that changes it |
 |---|---|---|---|

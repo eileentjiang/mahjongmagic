@@ -91,9 +91,9 @@ components:
 
 # Mahjong Magic: design
 
-Companion to [`docs/PRD.md`](docs/PRD.md) (what we build) and [`docs/SPEC.md`](docs/SPEC.md) (how it's built). The tokens above match `src/styles.css`, which is the source of truth in code. The design canvas holds every screen: <https://claude.ai/artifact/NEDBQcLeHcyEun6cFHrFmp>.
+Companion to [`PRD.md`](PRD.md) (what we build) and [`SPEC.md`](SPEC.md) (how it's built). The tokens above match [`src/styles.css`](../src/styles.css), which is the source of truth in code. The design canvas holds every screen: <https://claude.ai/artifact/NEDBQcLeHcyEun6cFHrFmp>.
 
-![The app's main screens](docs/design/screens.png)
+![The app's main screens](design/screens.png)
 
 ## Overview
 
@@ -113,19 +113,19 @@ Companion to [`docs/PRD.md`](docs/PRD.md) (what we build) and [`docs/SPEC.md`](d
 
 ## Colors
 
-![Colour and type sheet](docs/design/palette.png)
+![Color and type sheet](design/palette.png)
 
-- **Ground `#FBF8EF` + ink `#161A1A`.** All text is ink or slate on light surfaces; no grey-on-colour, no white text except on walnut.
-- **Walnut `#5A3826` is the only action colour:** primary buttons, selected segments, the selected-chip ring, the active tab, the "You" tag. Nothing else is brown.
-- **Player colours belong to people, not to meaning.** Mint, apricot, butter and lavender always mark the same player in that session (their seat card, chips, standings row, payout swatch) and are never used for anything else: not success, not warnings, not decoration.
+- **Ground `#FBF8EF` + ink `#161A1A`.** All text is ink or slate on light surfaces; no gray-on-color, no white text except on walnut.
+- **Walnut `#5A3826` is the only action color:** primary buttons, selected segments, the selected-chip ring, the active tab, the "You" tag. Nothing else is brown.
+- **Player colors belong to people, not to meaning.** Mint, apricot, butter and lavender always mark the same player in that session (their seat card, chips, standings row, payout swatch) and are never used for anything else: not success, not warnings, not decoration.
 - **Neutral surfaces** (cards, notes, banners) use ivory `#FFFDF7` with a khaki `#B09B76` 1px outline. Dividers inside lists are linen `#E3DCC8`.
 - **Tile inks** (cinnabar, jade, lacquer) appear only on tile faces, and in the 萬 / 中 / 發 glyphs.
-- **Contrast:** body text is ink on ground (about 17:1). Slate `#4A4E4B` is for secondary text only, at 13px and up. Player colours are backgrounds behind ink text, never text colours.
+- **Contrast:** body text is ink on ground (about 17:1). Slate `#4A4E4B` is for secondary text only, at 13px and up. Player colors are backgrounds behind ink text, never text colors.
 
 ## Typography
 
 - **Onest** for all English and numbers (400 body, 500 captions, 600 labels, 700 titles and money).
-- **Noto Serif TC 700** only for what appears on real tiles: tile faces, wind characters 東南西北, honours, and the 麻將 wordmark. No other Chinese in the UI.
+- **Noto Serif TC 700** only for what appears on real tiles: tile faces, wind characters 東南西北, honors, and the 麻將 wordmark. No other Chinese in the UI.
 - **Scale:** 30 wordmark · 24–28 screen title · 18 section · 15–16 body · 13 caption · 11–12 tags. Money uses tabular figures and is always signed (+$2.40 / −$1.20, with a real minus sign).
 - **No italics anywhere.** Emphasis is weight, not slant.
 - Body line height 1.45; long reading text (About) 1.6.
@@ -146,7 +146,7 @@ Flat by default. Depth is used for exactly three things:
 2. **The Score a win button** floats above the tab bar (`0 6px 14px rgba(90,56,38,0.25)`).
 3. **Sheets** slide up over a 50% ink scrim (`rgba(22,26,26,0.5)`) with a khaki top border.
 
-Selected player chips get a walnut ring with a ground-coloured gap (`0 0 0 2px #FBF8EF, 0 0 0 3px #5A3826`) instead of a shadow.
+Selected player chips get a walnut ring with a ground-colored gap (`0 0 0 2px #FBF8EF, 0 0 0 3px #5A3826`) instead of a shadow.
 
 ## Shapes
 
@@ -159,13 +159,13 @@ Selected player chips get a walnut ring with a ground-coloured gap (`0 0 0 2px #
 
 **Tiles**
 
-![The full tile set](docs/design/tiles.png)
+![The full tile set](design/tiles.png)
 
-- Ivory face, khaki border, tile-edge back, paper grain. Drawn in code (`src/components/Tile.tsx`), so they're crisp at any size.
+- Ivory face, khaki border, tile-edge back, paper grain. Drawn in code ([`src/components/Tile.tsx`](../src/components/Tile.tsx)), so they're crisp at any size.
 - **Characters:** the number in ink over a cinnabar 萬. Five is written 伍.
 - **Dots:** ringed circles in jade, cinnabar and lacquer, laid out like a real set (1 is one large cinnabar ring).
 - **Bamboo:** jade sticks with a node, cinnabar accents on 5, 7 and 9. 1 of bamboo is a single decorated stalk with leaves and a cinnabar bud (not a bird).
-- **Honours:** 東南西北 in ink, 中 cinnabar, 發 jade, white dragon as a double lacquer frame.
+- **Honors:** 東南西北 in ink, 中 cinnabar, 發 jade, white dragon as a double lacquer frame.
 - **Flowers / seasons:** number top-left and character top-right (cinnabar for flowers 梅蘭菊竹, jade for seasons 春夏秋冬), with a small bloom. Seat number = flower number.
 
 **Buttons**
@@ -176,12 +176,12 @@ Selected player chips get a walnut ring with a ground-coloured gap (`0 0 0 2px #
 
 **Segments and choices**
 - Two to five equal segments; the selected one is walnut-filled.
-- Player chips use that player's colour as the fill; the selected one gets the walnut ring.
+- Player chips use that player's color as the fill; the selected one gets the walnut ring.
 - Starting-point choices (Rules) are radio cards: walnut-ringed dot, 2px walnut border when selected, a small "Default" tag.
 
 **Switches:** 52×32, 8px rounded, walnut when on, linen when off, with an ivory 24px knob.
 
-**Seat card (Table):** the player's colour fills the card. Top line: wind character + English wind, Dealer tag. Bottom: name, flower number, signed balance in 22px bold.
+**Seat card (Table):** the player's color fills the card. Top line: wind character + English wind, Dealer tag. Bottom: name, flower number, signed balance in 22px bold.
 
 **Tags:** 22px tall, square, 1px khaki, 11–12px 600. Variants: Dealer, You (walnut fill), House rule, Custom, Edited, Default.
 
@@ -197,14 +197,14 @@ Selected player chips get a walnut ring with a ground-coloured gap (`0 0 0 2px #
 
 **Do**
 - Keep one primary walnut action per screen, in the footer.
-- Give every amount a sign and every player their colour.
+- Give every amount a sign and every player their color.
 - Show tiles as tiles (the Tile component), never as text codes.
 - Write in short, plain sentences, and name the person ("Ben wins", "Chloe discarded").
 - Use real tile vocabulary: chow, pung, kong, discard, self-draw, dealer.
 
 **Don't**
-- Don't use a player colour for anything except that player.
+- Don't use a player color for anything except that player.
 - Don't add Chinese characters as decoration, or use Noto Serif TC for English.
-- Don't use italics, gradients on surfaces, decorative shadows or extra accent colours.
-- Don't round containers, or put text on colour in anything but ink (or ground on walnut).
+- Don't use italics, gradients on surfaces, decorative shadows or extra accent colors.
+- Don't round containers, or put text on color in anything but ink (or ground on walnut).
 - Don't add a second primary button, or hide "Enter tiles by hand" anywhere a photo is involved.
