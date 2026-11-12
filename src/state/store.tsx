@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoom, deviceId, Op, RoomConnection, RoomState, Status } from './sync';
+import { sendFeedback } from '../api';
 import { HOUSE_DEFAULT, RuleSet } from '../engine/rules';
 import { newId, replay, Session, SessionEvent, TableState } from '../engine/session';
 import { TileId } from '../engine/tiles';
@@ -21,6 +22,8 @@ export interface Draft {
   winIndex?: number;
   /** Tiles the photo reader wasn't sure about, by index, with its other guesses. */
   unsure?: { index: number; alternatives: TileId[] }[];
+  /** What the photo reader said, kept so corrections can be measured. */
+  photo?: { model: string; read: { tile: TileId; sure: boolean }[]; flowers: TileId[] };
 }
 
 interface Persisted {
@@ -168,7 +171,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         type: 'game', at: Date.now(), winner: dr.winner, discarder, tiles: dr.tiles, flowers: dr.flowers,
         concealed: dr.concealed, points, fans, edited, cents: winPayout(points, table.rules, dr.winner, discarder, discarderOnlyPoints),
       });
-      if (ok) setData((d) => ({ ...d, draft: null }));
+      if (ok) {
+        if (dr.photo) void sendFeedback({ model: dr.photo.model, read: dr.photo.read, final: dr.tiles, flowersRead: dr.photo.flowers, flowersFinal: dr.flowers });
+        setData((d) => ({ ...d, draft: null }));
+      }
       return ok;
     },
     changeRules: (rules) => commit({ type: 'rules', at: Date.now(), rules }),
@@ -243,7 +249,7 @@ export function useStore(): Store {
 
 // ---------- Navigation: a stack mirrored into browser history, so ← and the phone's back gesture agree.
 export type Route =
-  | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about' | 'join' | 'claim'
+  | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about' | 'join' | 'claim' | 'accuracy'
   | 'rulesEdit' | 'playersEdit';
 export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | 'rulesFine' | 'invite' | null;
 

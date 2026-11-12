@@ -26,6 +26,7 @@ export function Camera() {
       const draft = newDraft(store.draft?.winner ?? store.mySeat ?? -1);
       draft.tiles = r.tiles.map((t) => t.tile);
       draft.flowers = [...new Set(r.flowers.map((f) => f.tile))];
+      draft.photo = { model: r.model ?? 'unknown', read: r.tiles.map((t) => ({ tile: t.tile, sure: t.sure })), flowers: [...new Set(r.flowers.map((f) => f.tile))] };
       draft.unsure = r.tiles.map((t, i) => ({ index: i, alternatives: t.alternatives, sure: t.sure })).filter((t) => !t.sure).map(({ index, alternatives }) => ({ index, alternatives }));
       store.update((d) => ({ ...d, draft }));
       setPhase({ kind: 'ready' });

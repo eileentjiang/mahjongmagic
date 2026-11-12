@@ -8,10 +8,12 @@ import { z } from 'zod';
 
 import { DurableObject } from 'cloudflare:workers';
 import { apply, expireLock, newRoom, Op, RoomSession, RoomState } from './room';
+import { addTo, compare, emptyStats, Feedback, ModelStats } from './feedback';
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
   ROOMS: DurableObjectNamespace<SessionRoom>;
+  STATS: DurableObjectNamespace<PhotoStats>;
   /** Cloudflare Workers AI: free daily allowance, used for photos. */
   AI: Ai;
   /** Which Workers AI model reads photos (set in wrangler.toml). */
@@ -124,7 +126,7 @@ If the rule depends on something the app can't know from the hand and these game
 
 function cors(origin: string | null): Record<string, string> {
   return origin && ALLOWED_ORIGINS.includes(origin)
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' }
     : {};
 }
 
@@ -211,6 +213,29 @@ async function createRoom(request: Request, env: Env, origin: string | null): Pr
   return json({ error: 'Couldn’t create a code. Try again.' }, 503, origin);
 }
 
+/** Running photo-accuracy totals per model, plus the most recent comparisons. */
+export class PhotoStats extends DurableObject<Env> {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const byModel = (await this.ctx.storage.get<Record<string, ModelStats>>('byModel')) ?? {};
+    if (url.pathname === '/get') {
+      const recent = (await this.ctx.storage.get<unknown[]>('recent')) ?? [];
+      return Response.json({ byModel, recent: recent.slice(-50) });
+    }
+    let f: Feedback;
+    try { f = await request.json(); } catch { return Response.json({ error: 'Bad feedback' }, { status: 400 }); }
+    const isList = (v: unknown, n: number) => Array.isArray(v) && v.length <= n;
+    if (typeof f?.model !== 'string' || f.model.length > 100 || !isList(f.read, 30) || !isList(f.final, 30) || !isList(f.flowersRead, 8) || !isList(f.flowersFinal, 8))
+      return Response.json({ error: 'Bad feedback' }, { status: 400 });
+    const c = compare(f);
+    byModel[f.model] = addTo(byModel[f.model] ?? emptyStats(), c);
+    const recent = (await this.ctx.storage.get<unknown[]>('recent')) ?? [];
+    recent.push({ at: Date.now(), model: f.model, read: f.read, final: f.final, flowersRead: f.flowersRead, flowersFinal: f.flowersFinal, ...c });
+    await this.ctx.storage.put({ byModel, recent: recent.slice(-500) });
+    return Response.json({ ok: true, ...c });
+  }
+}
+
 /** One shared session. Holds the authoritative copy and relays every change to every phone. */
 export class SessionRoom extends DurableObject<Env> {
   private async load(): Promise<RoomState | undefined> { return this.ctx.storage.get<RoomState>('state'); }
@@ -286,6 +311,16 @@ export default {
       return env.ROOMS.get(env.ROOMS.idFromName(ws[1])).fetch(request);
     }
     if (path === '/session' && request.method === 'POST') return createRoom(request, env, origin);
+    // Photo accuracy: corrections in (tile names only), totals out.
+    const stats = env.STATS.get(env.STATS.idFromName('all'));
+    if (path === '/feedback' && request.method === 'POST') {
+      const res = await stats.fetch('https://stats/add', { method: 'POST', body: await request.text() });
+      return json(await res.json(), res.status, origin);
+    }
+    if (path === '/stats' && request.method === 'GET') {
+      const res = await stats.fetch('https://stats/get');
+      return json(await res.json(), 200, origin);
+    }
 
     if (request.method !== 'POST') return json({ error: 'Use POST' }, 405, origin);
 
@@ -295,7 +330,7 @@ export default {
         if (typeof body.image !== 'string' || !body.image) return json({ error: 'Missing image' }, 400, origin);
         if (body.image.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Photo too large' }, 413, origin);
         const result = await recognizeWithWorkersAI(env, body.image);
-        return json(result, 200, origin);
+        return json({ ...result, model: env.PHOTO_MODEL }, 200, origin);
       }
       if (path === '/rule') {
         if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > 600) return json({ error: 'Describe the rule in up to 600 characters.' }, 400, origin);
