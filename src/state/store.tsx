@@ -41,7 +41,10 @@ function load(): { data: Persisted; storageOk: boolean } {
     const raw = localStorage.getItem(KEY);
     localStorage.setItem(KEY + '-probe', '1');
     localStorage.removeItem(KEY + '-probe');
-    return { data: raw ? { ...empty, ...JSON.parse(raw) } : empty, storageOk: true };
+    const data: Persisted = raw ? { ...empty, ...JSON.parse(raw) } : empty;
+    // Only one session may be open: close any older ones left open by earlier versions.
+    data.sessions = data.sessions.map((s) => (s.id !== data.currentId && !s.finished ? { ...s, finished: true } : s));
+    return { data, storageOk: true };
   } catch {
     return { data: empty, storageOk: false };
   }

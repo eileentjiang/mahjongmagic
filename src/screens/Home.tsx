@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { money, rulesSummary } from '../engine/rules';
 import { replay } from '../engine/session';
 import { WIND_ZH, WINDS } from '../engine/tiles';
-import { Icon, PLAYER_COLORS } from '../components/ui';
+import { Icon, PLAYER_COLORS, Sheet } from '../components/ui';
 import { SwipeRow } from '../components/SwipeRow';
 import { useNav, useStore } from '../state/store';
 
@@ -11,7 +12,10 @@ export function Home() {
   const cur = store.current && !store.current.finished ? store.current : null;
   // Nothing to continue and no saved tables: show the welcome tile instead of an empty page.
   const firstTime = !cur && store.profiles.length === 0;
-  const start = () => { store.startSetup(); nav.go('rules'); };
+  // Only one session can be open at a time: anything that would start another asks first.
+  const [blocked, setBlocked] = useState(false);
+  const guard = (action: () => void) => () => (cur ? setBlocked(true) : action());
+  const start = guard(() => { store.startSetup(); nav.go('rules'); });
 
   return (
     <div className="app" style={{ padding: 'calc(28px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))', gap: 20 }}>
@@ -37,7 +41,7 @@ export function Home() {
                 <span className="muted" style={{ fontSize: 12 }}>Swipe left to delete</span>
               </div>
               {store.profiles.map((p) => (
-                <SwipeRow key={p.id} label={p.name} onOpen={() => { store.startSetup(p); nav.go('players'); }}
+                <SwipeRow key={p.id} label={p.name} onOpen={guard(() => { store.startSetup(p); nav.go('players'); })}
                   onDelete={() => { store.update((d) => ({ ...d, profiles: d.profiles.filter((x) => x.id !== p.id) })); store.setNotice(`Deleted “${p.name}”.`); }}>
                   <span aria-hidden="true" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 13px)', gap: 3, flexShrink: 0 }}>
                     {[0, 1, 3, 2].map((i) => <span key={i} style={{ width: 13, height: 13, background: PLAYER_COLORS[i], border: '1px solid var(--line)' }} />)}
@@ -56,12 +60,13 @@ export function Home() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button type="button" className={cur ? 'btn' : 'btn btn-primary'} onClick={start}>Start a new session</button>
-        <button type="button" className="btn" onClick={() => nav.go('join')}>Join a session</button>
+        <button type="button" className="btn" onClick={guard(() => nav.go('join'))}>Join a session</button>
         <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button type="button" className="link-btn muted" style={{ fontSize: 13, fontWeight: 500, textDecoration: 'underline' }} onClick={() => nav.go('about')}>About Mahjong Magic</button>
           <span className="muted" style={{ fontSize: 12 }}>© Eileen Jiang</span>
         </footer>
       </div>
+      {blocked && cur && <OneAtATime onClose={() => setBlocked(false)} />}
     </div>
   );
 }
@@ -87,4 +92,23 @@ function CurrentSession() {
       <button type="button" className="btn btn-primary" onClick={() => nav.go('table')}>Continue session</button>
     </section>
   );
+}
+
+/** Shown when someone tries to start or join while a session is still open. */
+export function OneAtATime({ onClose }: { onClose?: () => void }) {
+  const store = useStore();
+  const nav = useNav();
+  const s = store.current!;
+  const st = replay(s);
+  const body = (
+    <>
+      <p style={{ margin: '-6px 0 4px', fontSize: 15, lineHeight: 1.45 }}>
+        “{s.name}” is still in progress (game {st.gameNumber}). Only one session can be open at a time, so finish this one first.
+      </p>
+      <button type="button" className="btn btn-primary" onClick={() => { onClose?.(); nav.reset('table'); }}>Continue “{s.name}”</button>
+      <button type="button" className="btn" onClick={() => { onClose?.(); nav.reset('table'); nav.go('end'); }}>End it &amp; settle up</button>
+    </>
+  );
+  if (!onClose) return <div className="panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}><h2>Finish your current session first</h2>{body}</div>;
+  return <Sheet title="Finish your current session first" onClose={onClose}>{body}</Sheet>;
 }
