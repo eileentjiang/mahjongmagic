@@ -2,6 +2,7 @@ import { money, rulesSummary } from '../engine/rules';
 import { replay } from '../engine/session';
 import { WIND_ZH, WINDS } from '../engine/tiles';
 import { Icon, PLAYER_COLORS } from '../components/ui';
+import { SwipeRow } from '../components/SwipeRow';
 import { useNav, useStore } from '../state/store';
 
 export function Home() {
@@ -31,16 +32,22 @@ export function Home() {
           {cur && <CurrentSession />}
           {store.profiles.length > 0 && (
             <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <h2>Play again</h2>
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <h2>Play again</h2>
+                <span className="muted" style={{ fontSize: 12 }}>Swipe left to delete</span>
+              </div>
               {store.profiles.map((p) => (
-                <button key={p.id} type="button" className="list-row" style={{ border: 'none', borderBottom: '1px solid var(--divider)', background: 'none', textAlign: 'left', padding: '6px 0' }}
-                  onClick={() => { store.startSetup(p); nav.go('players'); }}>
-                  <span style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <SwipeRow key={p.id} label={p.name} onOpen={() => { store.startSetup(p); nav.go('players'); }}
+                  onDelete={() => { store.update((d) => ({ ...d, profiles: d.profiles.filter((x) => x.id !== p.id) })); store.setNotice(`Deleted “${p.name}”.`); }}>
+                  <span aria-hidden="true" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 13px)', gap: 3, flexShrink: 0 }}>
+                    {[0, 1, 3, 2].map((i) => <span key={i} style={{ width: 13, height: 13, background: PLAYER_COLORS[i], border: '1px solid var(--line)' }} />)}
+                  </span>
+                  <span style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
                     <span style={{ fontSize: 16, fontWeight: 600 }}>{p.name}</span>
                     <span className="muted" style={{ fontSize: 13 }}>{p.players.join(', ')} · {rulesSummary(p.rules).replace('Hong Kong style · ', '')}</span>
                   </span>
                   <Icon.chevron />
-                </button>
+                </SwipeRow>
               ))}
             </section>
           )}
