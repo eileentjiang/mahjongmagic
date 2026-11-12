@@ -16,15 +16,19 @@ export interface Env {
   STATS: DurableObjectNamespace<PhotoStats>;
   /** Cloudflare Workers AI: free daily allowance, used for photos. */
   AI: Ai;
-  /** Which Workers AI model reads photos when Gemini isn't available (set in wrangler.toml). */
+  /** Who reads photos: "claude" (default), "gemini" or "workers-ai" (set in wrangler.toml). No silent fallback. */
+  PHOTO_READER?: string;
+  /** Which Workers AI model reads photos when PHOTO_READER is "workers-ai". */
   PHOTO_MODEL: string;
   /** Google Gemini: the main photo reader when a key is set. */
   GEMINI_API_KEY?: string;
   GEMINI_MODEL: string;
 }
 
-// Sonnet 5.5 at low effort: about a quarter of the cost of Opus 5.5 at medium (owner's choice, to keep photos cheap).
+// Custom rules: Sonnet 5.5 at low effort (text only, a fraction of a cent).
 const MODEL = 'claude-sonnet-5-5';
+// Photos: Opus 5.5 at low effort. The cheaper readers tried (Sonnet low, Workers AI, Gemini Flash) misread this set confidently.
+const PHOTO_CLAUDE_MODEL = 'claude-opus-5-5';
 const ALLOWED_ORIGINS = [
   'https://eileentjiang.github.io',
   'http://localhost:5173',
@@ -137,11 +141,11 @@ function json(body: unknown, status: number, origin: string | null): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors(origin) } });
 }
 
-async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.ContentBlockParam[], declined: string): Promise<T> {
+async function ask<T>(env: Env, schema: z.ZodType<T>, content: Anthropic.ContentBlockParam[], declined: string, model: string = MODEL): Promise<T> {
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 1 });
   // No refusal fallback on purpose (owner's choice, to keep costs down): a declined request is shown to the player.
   const response = await client.messages.parse({
-    model: MODEL,
+    model,
     max_tokens: 16000,
     output_config: { effort: 'low', format: zodOutputFormat(schema) },
     messages: [{ role: 'user', content }],
@@ -178,15 +182,33 @@ const BACKUP_PHOTO_MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct';
 /** An error the player sees, with the technical reason underneath so it can be reported. */
 class PhotoError extends Error { constructor(message: string, readonly detail: string) { super(message); } }
 
-async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognition & { model: string }> {
-  const problems: string[] = [];
-  if (env.GEMINI_API_KEY) {
+/** Read a photo with the configured reader. No silent fallback: a wrong confident read is worse than an honest failure. */
+async function recognizePhoto(env: Env, image: string): Promise<Recognition & { model: string }> {
+  const reader = env.PHOTO_READER ?? 'claude';
+  if (reader === 'claude') {
+    try {
+      const raw = await ask(env, RecognizeSchema, [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: image } },
+        { type: 'text', text: RECOGNIZE_PROMPT },
+      ], 'Claude declined to read this photo. Try another photo, or enter the tiles by hand.', PHOTO_CLAUDE_MODEL);
+      return { ...toRecognition(raw as unknown as Record<string, unknown>), model: PHOTO_CLAUDE_MODEL };
+    } catch (e) {
+      if (e instanceof UserError) throw e;
+      throw new PhotoError('Couldn’t read the photo just now. Try again, or enter the tiles by hand.', `${PHOTO_CLAUDE_MODEL}: ${(e as Error).message}`.slice(0, 300));
+    }
+  }
+  if (reader === 'gemini') {
     try {
       return { ...(await readWithGemini(env, image)), model: `gemini/${env.GEMINI_MODEL}` };
     } catch (e) {
-      problems.push(`${env.GEMINI_MODEL}: ${(e as Error).message}`.slice(0, 300));
+      throw new PhotoError('Couldn’t read the photo just now. Try again, or enter the tiles by hand.', `${env.GEMINI_MODEL}: ${(e as Error).message}`.slice(0, 300));
     }
   }
+  return recognizeWithWorkersAI(env, image);
+}
+
+async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognition & { model: string }> {
+  const problems: string[] = [];
   const models = [...new Set([env.PHOTO_MODEL, BACKUP_PHOTO_MODEL])];
   for (const model of models) {
     try {
@@ -393,7 +415,7 @@ export default {
       if (path === '/recognize') {
         if (typeof body.image !== 'string' || !body.image) return json({ error: 'Missing image' }, 400, origin);
         if (body.image.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Photo too large' }, 413, origin);
-        const result = await recognizeWithWorkersAI(env, body.image);
+        const result = await recognizePhoto(env, body.image);
         return json(result, 200, origin);
       }
       if (path === '/rule') {
