@@ -78,15 +78,15 @@ export function Table() {
         {st.lastGame && (
           <button type="button" className="row" onClick={() => nav.go('standings')} style={{ minHeight: 60, padding: '0 14px', border: '1px solid var(--line)', background: 'transparent', textAlign: 'left' }}>
             <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Last game</span>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>Game history</span>
               <span style={{ fontSize: 14 }}>{lastGameLine(s.players, st.lastGame)}</span>
             </span>
             <Icon.chevron />
           </button>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: st.rules.kongsPaidOnSpot ? '1fr 1fr' : '1fr', gap: 10 }}>
-          {st.rules.kongsPaidOnSpot && <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('kong')}>Record kong</button>}
-          <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('draw')}>No winner (draw)</button>
+          {st.rules.kongsPaidOnSpot && <button type="button" className="btn btn-primary" style={{ minHeight: 46, fontSize: 15 }} onClick={() => nav.openSheet('kong')}>Record kong</button>}
+          <button type="button" className="btn btn-primary" style={{ minHeight: 46, fontSize: 15 }} onClick={() => nav.openSheet('draw')}>No winner (draw)</button>
         </div>
         <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>
       </div>
