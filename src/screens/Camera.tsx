@@ -122,10 +122,8 @@ export function Camera() {
   );
 }
 
-export const GRID_COLS = 3;
-export const GRID_ROWS = 6;
-const TILE_ASPECT = 3 / 4; // width / height of one tile
-const GRID_ASPECT = (GRID_COLS * TILE_ASPECT) / GRID_ROWS;
+// Box shape (width / height). A 3 × 6 tile grid would be 0.375; a little wider leaves room for a 4th tile across.
+const GRID_ASPECT = 0.5;
 const MARGIN = 0.08; // crop a little outside the outlines, in case tiles sit slightly off
 
 /** Live camera with a tile-outline guide; capture() returns just the guide area as base64 JPEG. */
