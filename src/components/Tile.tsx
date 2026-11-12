@@ -89,7 +89,8 @@ function Face({ t }: { t: TileId }) {
 }
 
 /** A tile drawn at 60×80, scaled by `size` (1 = 60px wide). */
-export function Tile({ t, size = 1, onClick, label, win }: { t: TileId; size?: number; onClick?: () => void; label?: string; win?: boolean }) {
+/** `flag`: mark a tile the photo reader wasn't sure about. 'current' adds a thick ring; both show a ? badge. */
+export function Tile({ t, size = 1, onClick, label, win, flag }: { t: TileId; size?: number; onClick?: () => void; label?: string; win?: boolean; flag?: 'current' | 'pending' }) {
   const style: CSSProperties = { zoom: size };
   const inner = (
     <>
@@ -98,8 +99,17 @@ export function Tile({ t, size = 1, onClick, label, win }: { t: TileId; size?: n
     </>
   );
   const cls = 'tile' + (win ? ' tile-win' : '');
-  if (onClick) return <button type="button" className={cls} style={style} onClick={onClick} aria-label={label ?? tileName(t)}>{inner}</button>;
-  return <span className={cls} style={style} role="img" aria-label={label ?? tileName(t)}>{inner}</span>;
+  const el = onClick
+    ? <button type="button" className={cls} style={style} onClick={onClick} aria-label={label ?? tileName(t)}>{inner}</button>
+    : <span className={cls} style={style} role="img" aria-label={label ?? tileName(t)}>{inner}</span>;
+  if (!flag) return el;
+  // The ring and badge sit outside the zoomed tile so they stay bold at small sizes.
+  return (
+    <span className={'tile-flag' + (flag === 'current' ? ' tile-flag-current' : '')}>
+      {el}
+      <span className="tile-flag-badge" aria-hidden="true">?</span>
+    </span>
+  );
 }
 
 /** Shared paper-grain filter, rendered once. */

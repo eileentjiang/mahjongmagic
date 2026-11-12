@@ -24,9 +24,12 @@ export function Unsure() {
     <div className="app">
       <Header title={pending.length ? `Check ${pending.length} tile${pending.length === 1 ? '' : 's'}` : 'All checked'} />
       <div className="body">
-        <p style={{ margin: 0, fontSize: 15 }}>{pending.length ? 'Here’s what I see. I’m not sure about the outlined tile.' : 'Thanks. Everything else read clearly.'}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', rowGap: 10, columnGap: 4, justifyItems: 'center' }}>
-          {draft.tiles.map((t, i) => <Tile key={i} t={t} size={0.64} win={current?.index === i} label={tileName(t)} />)}
+        <p style={{ margin: 0, fontSize: 15 }}>{pending.length ? 'Here’s what I see. I’m not sure about the tiles marked ?, starting with the boxed one.' : 'Thanks. Everything else read clearly.'}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', rowGap: 16, columnGap: 4, justifyItems: 'center', paddingTop: 8 }}>
+          {draft.tiles.map((t, i) => {
+            const unsure = pending.some((p) => p.index === i);
+            return <Tile key={i} t={t} size={0.64} label={tileName(t) + (unsure ? ', not sure' : '')} flag={current?.index === i ? 'current' : unsure ? 'pending' : undefined} />;
+          })}
         </div>
         {current && (
           <section className="panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
