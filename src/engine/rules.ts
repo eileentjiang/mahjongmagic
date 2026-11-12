@@ -1,3 +1,5 @@
+import type { CustomRule } from './customRule';
+
 /** A rule set is plain data: every house rule is a setting the engine reads. */
 export interface RuleSet {
   base: 'house' | 'mcr';
@@ -27,6 +29,8 @@ export interface RuleSet {
   chickenNeedsNoFlowers: boolean;
   /** 0 = no cap. */
   pointCap: number;
+  /** The group's own rules, written in plain language and checked against every hand. */
+  customRules?: CustomRule[];
 }
 
 export const HOUSE_DEFAULT: RuleSet = {

@@ -1,8 +1,15 @@
 import { RuleSet } from './rules';
 
 /** Cents each seat receives (+) or pays (−). Always sums to 0. */
-export function winPayout(points: number, rules: RuleSet, winner: number, discarder: number | null): number[] {
+export function winPayout(points: number, rules: RuleSet, winner: number, discarder: number | null, discarderOnlyPoints = 0): number[] {
   const out = [0, 0, 0, 0];
+  // Points from custom rules that only the discarder pays (everyone pays them on a self-draw).
+  const extra = discarderOnlyPoints * rules.scaleCents;
+  points -= discarderOnlyPoints;
+  for (let i = 0; i < 4; i++) {
+    if (i === winner || !extra) continue;
+    if (discarder === null || i === discarder) { out[i] -= extra; out[winner] += extra; }
+  }
   const H = points * rules.scaleCents;
   const base8 = 8 * rules.scaleCents;
   for (let i = 0; i < 4; i++) {

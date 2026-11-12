@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { HOUSE_DEFAULT, isHouseDefault, isPureMcr, money, PURE_MCR, RULE_TOGGLES, RuleSet } from '../engine/rules';
 import { Header, Switch } from '../components/ui';
+import { CustomRuleSheet } from './CustomRuleSheet';
 import { useNav, useStore } from '../state/store';
 
 /** Rules & payout. `session` = opened mid-session from the menu. */
@@ -9,6 +10,9 @@ export function Rules({ session = false }: { session?: boolean }) {
   const nav = useNav();
   const startRules = session ? store.table!.rules : store.setup?.rules ?? HOUSE_DEFAULT;
   const [rules, setRules] = useState<RuleSet>(startRules);
+  const [adding, setAdding] = useState(false);
+  const custom = rules.customRules ?? [];
+  const setCustom = (c: NonNullable<RuleSet['customRules']>) => setRules({ ...rules, customRules: c });
   const scale = rules.scaleCents;
   const setScale = (c: number) => setRules({ ...rules, scaleCents: Math.min(1000, Math.max(1, c)) });
   const step = scale < 10 ? 1 : scale < 50 ? 5 : 25;
@@ -29,8 +33,8 @@ export function Rules({ session = false }: { session?: boolean }) {
         </div>
 
         <div className="seg" role="group" aria-label="House rules preset" style={{ gridTemplateColumns: '1fr 1fr' }}>
-          <button type="button" aria-pressed={isHouseDefault(rules)} onClick={() => setRules({ ...HOUSE_DEFAULT, scaleCents: scale })}>House default</button>
-          <button type="button" aria-pressed={isPureMcr(rules)} onClick={() => setRules({ ...PURE_MCR, scaleCents: scale })}>Pure MCR</button>
+          <button type="button" aria-pressed={isHouseDefault(rules)} onClick={() => setRules({ ...HOUSE_DEFAULT, scaleCents: scale, customRules: rules.customRules })}>House default</button>
+          <button type="button" aria-pressed={isPureMcr(rules)} onClick={() => setRules({ ...PURE_MCR, scaleCents: scale, customRules: rules.customRules })}>Pure MCR</button>
         </div>
 
         <div className="panel row" style={{ padding: '12px 14px', gap: 10 }}>
@@ -54,13 +58,27 @@ export function Rules({ session = false }: { session?: boolean }) {
               <Switch on={t.get(rules)} label={t.name} onChange={(on) => setRules(t.set(rules, on))} />
             </div>
           ))}
-          <p className="muted" style={{ fontSize: 13, margin: '10px 0 0' }}>Custom rules in your own words arrive with photo scoring.</p>
+          {custom.map((r) => (
+            <div key={r.id} className="list-row" style={{ minHeight: 62, padding: '6px 0' }}>
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
+                <span style={{ fontSize: 15, fontWeight: 600 }}>{r.name} <span className="tag tag-house" style={{ fontSize: 11, height: 20 }}>Custom</span></span>
+                <span className="muted" style={{ fontSize: 13 }}>{r.when} · +{r.points} pt{r.points === 1 ? '' : 's'} · {r.payer === 'everyone' ? 'everyone pays' : 'discarder pays'}</span>
+                <button type="button" className="link-btn" style={{ minHeight: 32, fontSize: 13 }} onClick={() => setCustom(custom.filter((x) => x.id !== r.id))}>Delete</button>
+              </span>
+              <Switch on={r.on} label={r.name} onChange={(on) => setCustom(custom.map((x) => (x.id === r.id ? { ...x, on } : x)))} />
+            </div>
+          ))}
+          <button type="button" className="link-btn" style={{ minHeight: 52 }} onClick={() => setAdding(true)}>
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Add a custom rule
+          </button>
         </section>
       </div>
       <footer className="footer">
         {session && <p className="muted" style={{ margin: 0, fontSize: 13, textAlign: 'center' }}>Changes apply from the next game on. Games already played keep their scores.</p>}
         <button type="button" className="btn btn-primary" onClick={next}>{session ? 'Save changes' : 'Next: players'}</button>
       </footer>
+      {adding && <CustomRuleSheet onClose={() => setAdding(false)} onSave={(r) => { setCustom([...custom, r]); setAdding(false); }} />}
     </div>
   );
 }

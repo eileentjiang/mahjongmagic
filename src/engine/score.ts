@@ -1,10 +1,12 @@
 import { detectFans, FanHit, HandContext } from './fans';
 import { RuleSet } from './rules';
+import { ruleApplies } from './customRule';
 import { flowerNumber, isFlower, TileId, Wind, WINDS } from './tiles';
 
 export interface ScoreInput extends HandContext {
   tiles: TileId[];
   flowers: TileId[];
+  winnerIsDealer?: boolean;
 }
 
 export interface ScoreResult {
@@ -60,7 +62,15 @@ export function scoreHand(input: ScoreInput, rules: RuleSet): ScoreResult {
   if (handPoints === 0 && (!rules.chickenNeedsNoFlowers || flowers.length === 0)) {
     fans = [{ id: 'chicken', name: 'Chicken Hand', points: 8, why: rules.chickenNeedsNoFlowers ? 'Nothing else scores and you hold no flowers.' : 'Nothing else scores.' }];
   }
-  const all = [...fans, ...flowerHits];
+  const standard = [...fans, ...flowerHits];
+  const houseHits: FanHit[] = (rules.customRules ?? []).filter((r) => r.on && ruleApplies(r, {
+    tiles, flowers, shape, selfDraw: input.selfDraw, concealed: input.concealed,
+    winnerIsDealer: !!input.winnerIsDealer, patterns: standard.map((f) => f.name),
+  })).map((r) => ({
+    id: 'custom:' + r.id, name: r.name, points: r.points, house: true, discarderOnly: r.payer === 'discarder' || undefined,
+    why: `Your rule: “${r.text}”`,
+  }));
+  const all = [...standard, ...houseHits];
   let points = all.reduce((a, f) => a + f.points, 0);
   const toward = rules.flowersCountToMinimum ? points : points - flowerHits.reduce((a, f) => a + f.points, 0);
   let capped = false;

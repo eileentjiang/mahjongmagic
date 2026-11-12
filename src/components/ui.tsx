@@ -76,7 +76,7 @@ export function TabBar({ current }: { current: Route }) {
   return (
     <nav className="tabbar" aria-label="Session">
       <button type="button" className="tab" aria-current={current === 'table' ? 'page' : undefined} onClick={() => go('table')}><Icon.grid />Table</button>
-      <button type="button" className="tab tab-score" onClick={() => nav.go('entry')}>
+      <button type="button" className="tab tab-score" onClick={() => nav.go('camera')}>
         <span className="box"><Icon.camera /></span>Score a win
       </button>
       <button type="button" className="tab" aria-current={current === 'standings' ? 'page' : undefined} onClick={() => go('standings')}><Icon.list />Standings</button>

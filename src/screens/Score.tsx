@@ -3,7 +3,7 @@ import { money } from '../engine/rules';
 import { scoreHand } from '../engine/score';
 import { winPayout } from '../engine/payout';
 import { seatWindOf } from '../engine/session';
-import { WINDS } from '../engine/tiles';
+import { tileName, WINDS } from '../engine/tiles';
 import { Header, PlayerChips, PLAYER_COLORS, Switch } from '../components/ui';
 import { Tile } from '../components/Tile';
 import { Draft, useNav, useStore } from '../state/store';
@@ -18,9 +18,10 @@ export function Score() {
   const set = (d: Partial<Draft>) => store.update((x) => ({ ...x, draft: { ...x.draft!, ...d } }));
 
   const winner = draft.winner;
+  const winIndex = draft.winIndex ?? draft.tiles.length - 1;
   const result = winner >= 0 ? scoreHand({
     tiles: draft.tiles, flowers: draft.flowers, seatWind: seatWindOf(winner, st.dealer), prevalentWind: WINDS[st.tableWind],
-    selfDraw: draft.selfDraw, concealed: draft.concealed, winningTile: draft.tiles[draft.tiles.length - 1],
+    selfDraw: draft.selfDraw, concealed: draft.concealed, winningTile: draft.tiles[winIndex], winnerIsDealer: winner === st.dealer,
   }, st.rules) : null;
   const fans = result ? result.fans.filter((f) => !draft.removed.includes(f.name + '|' + f.why)) : [];
   const points = Math.min(fans.reduce((a, f) => a + f.points, 0), st.rules.pointCap || Infinity);
@@ -28,12 +29,13 @@ export function Score() {
   const discarder = draft.selfDraw ? null : draft.discarder;
   const methodOk = draft.selfDraw || (discarder !== null && discarder !== winner);
   const below = result?.valid && (draft.removed.length ? points < st.rules.minPoints : result.belowMinimum);
-  const cents = winner >= 0 && methodOk ? winPayout(points, st.rules, winner, discarder) : null;
+  const discarderOnlyPoints = fans.filter((f) => f.discarderOnly).reduce((a, f) => a + f.points, 0);
+  const cents = winner >= 0 && methodOk ? winPayout(points, st.rules, winner, discarder, Math.min(discarderOnlyPoints, points)) : null;
   const canConfirm = !!result?.valid && methodOk && (!below || override) && points > 0;
   const nextDealer = st.rules.dealerKeepsDealOnWin && winner === st.dealer ? st.dealer : (st.dealer + 1) % 4;
 
   const confirm = () => {
-    store.confirmGame({ points, fans, edited });
+    store.confirmGame({ points, fans, edited, discarderOnlyPoints: Math.min(discarderOnlyPoints, points) });
     nav.reset('table');
   };
 
@@ -66,12 +68,13 @@ export function Score() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
             <h2>Tiles</h2>
-            <button type="button" className="link-btn" style={{ fontSize: 13, minHeight: 32, textDecoration: 'underline' }} onClick={nav.back}>Change tiles</button>
+            <button type="button" className="link-btn" style={{ fontSize: 13, minHeight: 32, textDecoration: 'underline' }} onClick={() => nav.go('entry')}>Change tiles</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 1fr))', rowGap: 10, columnGap: 4, justifyItems: 'center' }}>
-            {[...draft.tiles, ...draft.flowers].map((t, i) => <Tile key={i} t={t} size={0.6} win={i === draft.tiles.length - 1} />)}
+            {draft.tiles.map((t, i) => <Tile key={i} t={t} size={0.6} win={i === winIndex} onClick={() => set({ winIndex: i, removed: [] })} label={`${tileName(t)}${i === winIndex ? ', the winning tile' : ', tap to make this the winning tile'}`} />)}
+            {draft.flowers.map((t) => <Tile key={t} t={t} size={0.6} />)}
           </div>
-          <span className="muted" style={{ fontSize: 12 }}>Outlined: the winning tile (the last one you added).</span>
+          <span className="muted" style={{ fontSize: 12 }}>Outlined: the winning tile. Tap a different tile if another one completed the hand.</span>
         </section>
 
         {winner < 0 ? (
@@ -87,7 +90,7 @@ export function Score() {
                   <div className="row" style={{ gap: 0 }}>
                     <button type="button" aria-expanded={open === i} onClick={() => setOpen(open === i ? -1 : i)} className="row" style={{ flexGrow: 1, gap: 8, minHeight: 48, padding: 0, border: 'none', background: 'none', textAlign: 'left' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#161A1A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, transition: 'transform 120ms', transform: `rotate(${open === i ? 90 : 0}deg)` }}><path d="M9 6l6 6-6 6" /></svg>
-                      <span style={{ flexGrow: 1, fontSize: 15, fontWeight: 500 }}>{f.name}</span>
+                      <span style={{ flexGrow: 1, fontSize: 15, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>{f.name}{f.house && <span className="tag tag-house" style={{ fontSize: 11, height: 20 }}>House rule</span>}</span>
                       <span className="num" style={{ fontSize: 15, fontWeight: 700 }}>{f.points}</span>
                     </button>
                     <button type="button" className="icon-btn" aria-label={`Remove ${f.name}`} style={{ marginLeft: 4, color: 'var(--muted)' }} onClick={() => { set({ removed: [...draft.removed, f.name + '|' + f.why] }); setOpen(-1); }}>
