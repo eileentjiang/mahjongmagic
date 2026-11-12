@@ -157,7 +157,7 @@ const FLOWER_SET = new Set<string>(FLOWER_IDS);
 /** Pull the first JSON object out of a model reply (some models wrap it in ``` fences or add a sentence). */
 function firstJson(text: string): unknown {
   const start = text.indexOf('{'), end = text.lastIndexOf('}');
-  if (start < 0 || end <= start) throw new UserError('Couldn’t read the tiles. Try again, or enter them by hand.');
+  if (start < 0 || end <= start) throw new Error(`no JSON in reply: ${text.slice(0, 120)}`);
   return JSON.parse(text.slice(start, end + 1));
 }
 
@@ -169,21 +169,44 @@ interface Recognition {
   flowers: { tile: string; sure: boolean }[];
 }
 
-async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognition> {
-  const run = env.AI.run.bind(env.AI) as unknown as (model: string, inputs: unknown) => Promise<{ choices?: { message?: { content?: string | null } }[]; response?: string }>;
-  const out = await run(env.PHOTO_MODEL, {
+/** Tried in order: the configured model, then a smaller backup if it fails. */
+const BACKUP_PHOTO_MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct';
+
+/** An error the player sees, with the technical reason underneath so it can be reported. */
+class PhotoError extends Error { constructor(message: string, readonly detail: string) { super(message); } }
+
+async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognition & { model: string }> {
+  const models = [...new Set([env.PHOTO_MODEL, BACKUP_PHOTO_MODEL])];
+  const problems: string[] = [];
+  for (const model of models) {
+    try {
+      return { ...(await readWith(env, model, image)), model };
+    } catch (e) {
+      problems.push(`${model.split('/').pop()}: ${(e as Error).message}`.slice(0, 300));
+    }
+  }
+  throw new PhotoError('Couldn’t read the photo just now. Try again, or enter the tiles by hand.', problems.join(' | '));
+}
+
+async function readWith(env: Env, model: string, image: string): Promise<Recognition> {
+  type Out = { choices?: { message?: { content?: string | null } }[]; response?: unknown };
+  const run = env.AI.run.bind(env.AI) as unknown as (model: string, inputs: unknown) => Promise<Out>;
+  const inputs: Record<string, unknown> = {
     messages: [{
       role: 'user',
       content: [
-        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}`, detail: 'high' } },
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image}` } },
         { type: 'text', text: RECOGNIZE_PROMPT + '\n\nReply with only a JSON object with these keys, in this order: "quality", "problem", "totalTiles", "flowers" (each {"tile","sure"}), "tiles" (each {"suit","number","tile","sure","alternatives"}), using the tile ids above.' },
       ],
     }],
-    response_format: { type: 'json_schema', json_schema: { name: 'hand', schema: z.toJSONSchema(RecognizeSchema) } },
-    max_tokens: 4000,
-  });
-  const text = out.choices?.[0]?.message?.content ?? out.response ?? '';
-  const raw = firstJson(text) as Record<string, unknown>;
+    max_tokens: 6000,
+  };
+  // Kimi thinks at length by default and can run out of room before answering; the step-by-step
+  // answer format already makes it work through each tile.
+  if (model.includes('kimi')) { inputs.reasoning_effort = 'none'; inputs.chat_template_kwargs = { enable_thinking: false }; }
+  const out = await run(model, inputs);
+  const reply = out.choices?.[0]?.message?.content ?? out.response ?? '';
+  const raw = (typeof reply === 'object' && reply ? reply : firstJson(String(reply))) as Record<string, unknown>;
   // Open models sometimes invent ids: keep what's valid, and flag the hand as unsure rather than failing.
   const tiles = (Array.isArray(raw.tiles) ? raw.tiles : []).flatMap((t: { tile?: string; sure?: boolean; alternatives?: string[] }) =>
     t && typeof t.tile === 'string' && TILE_SET.has(t.tile)
@@ -192,6 +215,7 @@ async function recognizeWithWorkersAI(env: Env, image: string): Promise<Recognit
   const flowers = (Array.isArray(raw.flowers) ? raw.flowers : []).flatMap((f: { tile?: string; sure?: boolean }) =>
     f && typeof f.tile === 'string' && FLOWER_SET.has(f.tile) ? [{ tile: f.tile, sure: f.sure !== false }] : []);
   const quality = ['ok', 'blurry', 'dark', 'partial', 'no_tiles'].includes(raw.quality as string) ? raw.quality as Recognition['quality'] : 'ok';
+  if (quality === 'ok' && tiles.length === 0) throw new Error('reply had no tiles');
   return { quality, problem: typeof raw.problem === 'string' ? raw.problem : null, tiles, flowers };
 }
 
@@ -330,7 +354,7 @@ export default {
         if (typeof body.image !== 'string' || !body.image) return json({ error: 'Missing image' }, 400, origin);
         if (body.image.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: 'Photo too large' }, 413, origin);
         const result = await recognizeWithWorkersAI(env, body.image);
-        return json({ ...result, model: env.PHOTO_MODEL }, 200, origin);
+        return json(result, 200, origin);
       }
       if (path === '/rule') {
         if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > 600) return json({ error: 'Describe the rule in up to 600 characters.' }, 400, origin);
@@ -339,6 +363,7 @@ export default {
       }
       return json({ error: 'Not found' }, 404, origin);
     } catch (e) {
+      if (e instanceof PhotoError) { console.error(e.detail); return json({ error: e.message, detail: e.detail }, 502, origin); }
       if (e instanceof UserError) return json({ error: e.message }, 422, origin);
       if (e instanceof Anthropic.RateLimitError) return json({ error: 'Too many requests right now. Try again in a minute.' }, 429, origin);
       if (e instanceof Anthropic.AuthenticationError) return json({ error: 'The server’s API key isn’t working.' }, 500, origin);

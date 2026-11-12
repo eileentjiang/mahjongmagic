@@ -28,7 +28,11 @@ async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<
   try {
     const res = await fetch(SERVER + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((data as { error?: string }).error ?? 'The photo service didn’t respond.');
+    if (!res.ok) {
+      const err = new Error((data as { error?: string }).error ?? 'The photo service didn’t respond.') as Error & { detail?: string };
+      err.detail = (data as { detail?: string }).detail;
+      throw err;
+    }
     return data as T;
   } catch (e) {
     if ((e as Error).name === 'AbortError') throw new Error('That took too long. Check your connection and try again.');

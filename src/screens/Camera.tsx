@@ -4,7 +4,7 @@ import { Icon } from '../components/ui';
 import { useNav, useStore } from '../state/store';
 import { newDraft } from './HandEntry';
 
-type Phase = { kind: 'ready' } | { kind: 'reading' } | { kind: 'rejected'; title: string; detail: string } | { kind: 'error'; message: string };
+type Phase = { kind: 'ready' } | { kind: 'reading' } | { kind: 'rejected'; title: string; detail: string } | { kind: 'error'; message: string; detail?: string };
 
 const TITLES: Record<string, string> = { blurry: 'Too blurry to read', dark: 'Too dark to read', partial: 'Some tiles are cut off', no_tiles: 'No tiles found' };
 
@@ -32,7 +32,7 @@ export function Camera() {
       setPhase({ kind: 'ready' });
       nav.go(draft.unsure.length ? 'unsure' : 'score');
     } catch (e) {
-      setPhase({ kind: 'error', message: (e as Error).message });
+      setPhase({ kind: 'error', message: (e as Error).message, detail: (e as Error & { detail?: string }).detail });
     }
   };
 
@@ -86,6 +86,7 @@ export function Camera() {
             <div>
               <h1 id="rt" style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{phase.kind === 'rejected' ? phase.title : 'Couldn’t read the photo'}</h1>
               <p style={{ margin: '4px 0 0', fontSize: 15 }}>{phase.kind === 'rejected' ? phase.detail : phase.message}</p>
+              {phase.kind === 'error' && phase.detail && <p className="muted" style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.4, wordBreak: 'break-word' }}>Details: {phase.detail}</p>}
             </div>
             {phase.kind === 'rejected' && (
               <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 15 }}>
