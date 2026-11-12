@@ -5,7 +5,7 @@ import { CustomRuleSheet } from './CustomRuleSheet';
 import { useNav, useStore } from '../state/store';
 
 const PRESETS = [
-  { key: 'house', name: 'Our house rules', desc: 'Win with any points. The player who discards the winning tile pays double; a self-draw doubles everyone’s payment.', base: HOUSE_DEFAULT, is: isHouseDefault, tag: 'Default' },
+  { key: 'house', name: 'Our house rules', desc: 'Win with any points. The player who discards the winning tile pays double; a self-draw doubles everyone’s payment…', base: HOUSE_DEFAULT, is: isHouseDefault, tag: 'Default' },
   { key: 'mcr', name: 'Official rules (MCR)', desc: 'Tournament scoring: at least 8 points to win, and every win carries an 8-point base.', base: PURE_MCR, is: isPureMcr, tag: '' },
 ];
 
@@ -32,7 +32,7 @@ export function Rules({ session = false }: { session?: boolean }) {
     <div className="app">
       <Header title="Rules & payout" kicker={session ? undefined : 'Step 1 of 2'} />
       <div className="body" style={{ gap: 22 }}>
-        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.45 }}>Pick a starting point. You can modify the ruleset later.</p>
+        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.45 }}>Pick a starting point. You can also modify the ruleset later.</p>
 
         <div role="radiogroup" aria-label="Rules" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {PRESETS.map((p) => {
@@ -63,9 +63,9 @@ export function Rules({ session = false }: { session?: boolean }) {
           <button type="button" className="btn" style={{ width: 44, minHeight: 44, padding: 0, fontSize: 20, background: 'var(--ground)' }} aria-label="Raise the payout scale" onClick={() => setScale(scale + step)}>+</button>
         </div>
 
-        <button type="button" className="row" onClick={() => nav.openSheet('rulesFine')} style={{ gap: 10, minHeight: 52, padding: '0 14px', border: '1px solid var(--line)', background: 'transparent', textAlign: 'left' }}>
-          <span style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 15, fontWeight: 600 }}>Fine-tune house rules</span>
+        <button type="button" className="row" onClick={() => nav.openSheet('rulesFine')} style={{ gap: 12, minHeight: 68, padding: '12px 16px', border: '1px solid var(--line)', background: 'transparent', textAlign: 'left' }}>
+          <span style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>Fine-tune house rules</span>
             <span className="muted" style={{ fontSize: 13 }}>Optional · {RULE_TOGGLES.length} switches and your own custom rules{(rules.customRules?.length ?? 0) > 0 ? ` (${rules.customRules!.length} added)` : ''}</span>
           </span>
           <Icon.chevron />
