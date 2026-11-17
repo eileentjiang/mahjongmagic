@@ -43,7 +43,7 @@ function MenuSheet() {
           </button>
         ))}
       </nav>
-      <button type="button" className="btn" onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>
+      {!store.watching && <button type="button" className="btn" onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>}
     </Sheet>
   );
 }

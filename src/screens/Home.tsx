@@ -106,7 +106,9 @@ export function OneAtATime({ onClose }: { onClose?: () => void }) {
         “{s.name}” is still in progress (game {st.gameNumber}). Only one session can be open at a time, so finish this one first.
       </p>
       <button type="button" className="btn btn-primary" onClick={() => { onClose?.(); nav.reset('table'); }}>Continue “{s.name}”</button>
-      <button type="button" className="btn" onClick={() => { onClose?.(); store.setEnding(true); nav.reset('table'); nav.go('end'); }}>End it &amp; settle up</button>
+      {store.watching
+        ? <button type="button" className="btn" onClick={() => { onClose?.(); store.finishSession(false); }}>Stop watching</button>
+        : <button type="button" className="btn" onClick={() => { onClose?.(); store.setEnding(true); nav.reset('table'); nav.go('end'); }}>End it &amp; settle up</button>}
     </>
   );
   if (!onClose) return <div className="panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}><h2>Finish your current session first</h2>{body}</div>;

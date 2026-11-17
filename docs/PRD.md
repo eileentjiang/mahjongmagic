@@ -179,7 +179,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **One scorer at a time.** While someone is scoring, other phones show "Chloe is scoring game 6…" and their Score button is paused, so a game can't be entered twice.
 - **Anyone can view** standings, history and their own "My seat" card at any time.
 - No accounts: a phone is remembered for that session only.
-- **Ending together.** When anyone taps **End session & settle up**, every phone moves to **Final standings**. Each phone stays there until its own player taps **Finish session**, so Amy keeps her standings even after Ben finishes. Backing out of Final standings means "keep playing" for that phone. Once anyone finishes, the session can't be continued another day.
+- **Ending together.** When anyone taps **End session & settle up**, every phone moves to **Final standings**. Each phone stays there until its own player taps **Finish session**, so Amy keeps her standings even after Ben finishes. Backing out of Final standings means "keep playing" for that phone. Once anyone finishes, the session can't be continued another day. **Watchers stay passive:** they can't end the session, and on Final standings they only see the results and a **Done** button that takes them home, with no check-in and nothing counted.
 
 **Navigation during a session:** a bottom tab bar with three items: **This game**, **Score a win** (the large center button, which opens the camera directly, so a fluent player is one tap from snapping the hand), and **Standings**. Everything else (Home, Standings & history, Rules, Players, Send feedback, About, End session) lives in the **☰ menu** at the top right of the This game screen. The menu shows headlines only.
 

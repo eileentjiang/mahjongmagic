@@ -61,7 +61,7 @@ export function EndSession() {
             </div>
           ))}
         </section>
-        {!hasProfile && (
+        {!store.watching && !hasProfile && (
           <section className="panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <h2 style={{ fontSize: 17 }}>Play with this group again?</h2>
@@ -70,12 +70,15 @@ export function EndSession() {
             <button type="button" className="btn" style={{ background: 'var(--ground)' }} onClick={() => store.saveProfile(s)}>Save as “{s.name}”</button>
           </section>
         )}
-        {hasProfile && <p className="muted" style={{ margin: 0, fontSize: 14 }}>Saved as a table profile: “{s.name}”.</p>}
-        <button type="button" className="link-btn" style={{ justifyContent: 'center' }} onClick={share}><Icon.share />Share summary</button>
+        {!store.watching && hasProfile && <p className="muted" style={{ margin: 0, fontSize: 14 }}>Saved as a table profile: “{s.name}”.</p>}
+        {!store.watching && <button type="button" className="link-btn" style={{ justifyContent: 'center' }} onClick={share}><Icon.share />Share summary</button>}
       </div>
       <footer className="footer">
-        <button type="button" className="btn btn-primary" onClick={() => setAsking(true)}>Finish session</button>
-        {!s.finished && <button type="button" className="btn" onClick={() => { store.finishSession(true); nav.reset('home'); }}>Save &amp; continue another day</button>}
+        {/* Watchers have nothing to settle: one tap takes them home, no check-in. */}
+        {store.watching
+          ? <button type="button" className="btn btn-primary" onClick={finish}>Done</button>
+          : <button type="button" className="btn btn-primary" onClick={() => setAsking(true)}>Finish session</button>}
+        {!s.finished && !store.watching && <button type="button" className="btn" onClick={() => { store.finishSession(true); nav.reset('home'); }}>Save &amp; continue another day</button>}
       </footer>
       {asking && <CheckIn onClose={() => setAsking(false)} onDone={finish} />}
     </div>
@@ -84,7 +87,7 @@ export function EndSession() {
 
 const ANSWERS: [Answer, string][] = [['smooth', 'Smooth'], ['confusing', 'Confusing'], ['frustrating', 'Frustrating']];
 
-/** Two optional questions after Finish session, asked on every phone. */
+/** Two optional questions after Finish session, asked on every player's phone. */
 function CheckIn({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [scoring, setScoring] = useState<Answer | null>(null);
   const [overall, setOverall] = useState<Answer | null>(null);

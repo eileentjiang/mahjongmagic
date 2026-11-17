@@ -33,6 +33,8 @@ export interface Session {
   finished: boolean;
   /** Shared sessions: someone tapped End & settle up, so every phone shows final standings. */
   ending?: boolean;
+  /** Shared sessions, this phone only: joined to watch, without a seat. Watchers can't end the session. */
+  watching?: boolean;
   /** Set when this session is shared live; the server holds the authoritative copy. */
   shared?: { code: string };
 }

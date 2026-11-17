@@ -69,6 +69,8 @@ export interface Store extends Persisted {
   finishSession: (keep: boolean) => void;
   /** Shared sessions: tell every phone to show (or stop showing) final standings. */
   setEnding: (ending: boolean) => void;
+  /** This phone joined a shared session to watch only: no seat, nothing to settle. */
+  watching: boolean;
   saveProfile: (s: Session) => void;
   // ---- Shared sessions
   room: RoomState | null;
@@ -195,7 +197,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     finishSession: (keep) => {
       // Someone else may already have finished this shared session: then only this phone closes it.
       const already = !!current?.finished;
-      if (!keep && !already) {
+      if (!keep && !already && !current?.watching) {
         if (shared) void send({ op: 'finish', finished: true });
         void track({ type: 'session_settled' });
       }
@@ -206,7 +208,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         sessions: d.sessions.map((s) => (s.id === d.currentId ? { ...s, finished: !keep } : s)),
       }));
     },
-    setEnding: (ending) => { if (shared && current && !current.finished && !!current.ending !== ending) void send({ op: 'end', ending }); },
+    watching: !!shared && !!current?.watching,
+    setEnding: (ending) => { if (shared && current && !current.watching && !current.finished && !!current.ending !== ending) void send({ op: 'end', ending }); },
     saveProfile: (s) => setData((d) => ({ ...d, profiles: upsertProfile(d.profiles, s) })),
     room: shared || joinCode ? room : null,
     status: shared || joinCode ? status : null,
@@ -229,7 +232,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (joinCode && st) {
         setData((d) => {
           const existing = d.sessions.find((x) => x.shared?.code === st.code);
-          const local: Session = { ...(st.session as Session), shared: { code: st.code } };
+          const local: Session = { ...(st.session as Session), shared: { code: st.code }, watching: seat === null };
           return {
             ...d, currentId: existing?.id ?? local.id, draft: null,
             sessions: existing ? d.sessions.map((x) => (x === existing ? { ...x, ...local } : x)) : [local, ...d.sessions],

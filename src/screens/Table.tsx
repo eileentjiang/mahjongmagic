@@ -88,7 +88,7 @@ export function Table() {
           {st.rules.kongsPaidOnSpot && <button type="button" className="btn btn-primary" style={{ minHeight: 46, fontSize: 15 }} onClick={() => nav.openSheet('kong')}>Record kong</button>}
           <button type="button" className="btn btn-primary" style={{ minHeight: 46, fontSize: 15 }} onClick={() => nav.openSheet('draw')}>No winner (draw)</button>
         </div>
-        <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>
+        {!store.watching && <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>}
       </div>
       <TabBar current="table" locked={lockedBy !== null} />
     </div>
