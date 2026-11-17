@@ -47,4 +47,14 @@ describe('shared session room', () => {
     expect(expireLock(s, LOCK_MS + 1, new Set(['host1'])).lock).toBeNull();
     expect(expireLock(s, 1000, new Set(['phone2'])).lock).toBeNull();
   });
+
+  it('anyone can start the ending; it stops once the session is finished', () => {
+    let s = newRoom('ABCD', session(), 'host1', 0);
+    s = ok(apply(s, 'phone2', { op: 'end', ending: true }, 0));
+    expect(s.session.ending).toBe(true);
+    s = ok(apply(s, 'phone2', { op: 'end', ending: false }, 0));
+    expect(s.session.ending).toBe(false);
+    s = ok(apply(s, 'phone2', { op: 'finish', finished: true }, 0));
+    expect(apply(s, 'host1', { op: 'end', ending: true }, 0)).toMatchObject({ ok: false });
+  });
 });

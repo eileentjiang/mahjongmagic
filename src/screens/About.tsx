@@ -23,12 +23,12 @@ export function About() {
         <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6 }}>I grew up the child of immigrants from northern China, where playing cards was the name of the game. It wasn’t until college and post-grad that I learned how to play mahjong. As I grew older, mahjong grew in popularity and connected diaspora kids in many communities (and generations!)</p>
         <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6 }}>The aunties and grannies crush, and maybe I’ll be brave enough to play them one day. Mahjong has become a love of mine not just for the game, but for the rituals and connection from the neighborhood gossip, checking in on family, and sharing food.</p>
         <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6 }}>I created this little corner to make parts of the game a little more accessible and less intimidating. I hope you love this game as much as I do. <span className="zh" lang="zh-Hant">糊了!</span></p>
-        <a className="btn" href="mailto:eileen.jiang@kellogg.northwestern.edu?subject=Mahjong%20Magic%20feedback" style={{ justifyContent: 'space-between', minHeight: 56, padding: '0 18px', marginTop: 4 }}>
+        <button type="button" className="btn" onClick={() => nav.openSheet('feedback')} style={{ justifyContent: 'space-between', minHeight: 56, padding: '0 18px', marginTop: 4 }}>
           <span>Feedback? Contact me</span><Icon.arrow />
-        </a>
+        </button>
       </div>
       <footer style={{ padding: '14px 24px calc(30px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--divider)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button type="button" className="link-btn muted" style={{ fontSize: 13, fontWeight: 500, textDecoration: 'underline' }} onClick={() => nav.go('accuracy')}>Photo accuracy</button>
+        <button type="button" className="link-btn muted" style={{ fontSize: 13, fontWeight: 500, textDecoration: 'underline' }} onClick={() => nav.go('metrics')}>Metrics</button>
         <span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>© Eileen Jiang</span>
       </footer>
     </div>

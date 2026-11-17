@@ -67,12 +67,26 @@ export interface ModelStats {
   missed: number; extra: number; flowersWrong: number; perfectPhotos: number; confusions: Record<string, number>;
 }
 export interface PhotoCost { photos: number; inputTokens: number; outputTokens: number; usd: number; last: { input: number; output: number; usd: number; at: number } | null }
-export async function getStats(): Promise<{ byModel: Record<string, ModelStats>; costs: Record<string, PhotoCost> }> {
+export async function getStats(): Promise<Stats> {
   const res = await fetch(SERVER + '/stats').catch(() => { throw new Error('Couldn’t reach the server.'); });
   if (!res.ok) throw new Error('Couldn’t load the numbers.');
-  const d = (await res.json()) as { byModel?: Record<string, ModelStats>; costs?: Record<string, PhotoCost> };
-  return { byModel: d.byModel ?? {}, costs: d.costs ?? {} };
+  const d = (await res.json()) as Partial<Stats>;
+  return { byModel: d.byModel ?? {}, costs: d.costs ?? {}, usage: d.usage ?? null, inUse: d.inUse ?? null };
 }
+export type Answer = 'smooth' | 'confusing' | 'frustrating';
+export type UsageEvent =
+  | { type: 'session_started' } | { type: 'session_settled' } | { type: 'game_by_hand'; tiles: number }
+  | { type: 'checkin'; scoring: Answer | null; overall: Answer | null } | { type: 'checkin_skipped' };
+/** Anonymous counts for the Metrics screen (no names, photos or device ids). Best effort. */
+export function track(e: UsageEvent) {
+  return post('/event', e, 15_000).catch(() => { /* never get in the way of play */ });
+}
+export interface Usage {
+  sessionsStarted: number; sessionsSettled: number; handGames: number; handTiles: number;
+  checkin: { scoring: Record<Answer, number>; overall: Record<Answer, number>; skipped: number };
+}
+export interface Stats { byModel: Record<string, ModelStats>; costs: Record<string, PhotoCost>; usage: Usage | null; inUse: string | null }
+
 export const readRule = (text: string) => post<RuleReading>('/rule', { text }, 60_000);
 
 export type { CustomRule };

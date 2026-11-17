@@ -17,7 +17,8 @@ export type Op =
   | { op: 'meta'; name?: string; players?: string[] }
   | { op: 'lock' }
   | { op: 'unlock' }
-  | { op: 'finish'; finished: boolean };
+  | { op: 'finish'; finished: boolean }
+  | { op: 'end'; ending: boolean };
 
 export type Status = 'connecting' | 'open' | 'offline' | 'missing';
 

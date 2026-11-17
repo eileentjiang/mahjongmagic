@@ -26,17 +26,17 @@ export function Table() {
   // In a shared session you open only your own seat card; one phone keeping score opens any.
   return (
     <div className="app">
-      <header className="header" style={{ paddingLeft: 20 }}>
+      <header className="header" style={{ paddingLeft: 20, gap: 2, alignItems: 'flex-end' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1 }}>
           <span style={{ fontSize: 14, fontWeight: 500 }} className="muted">{s.name} · game {st.gameNumber}</span>
           <h1 style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 28 }}>
             <span className="zh" lang="zh-Hant">{ROUND_ZH[st.tableWind]}</span><span>{ROUND[st.tableWind]} round</span>
           </h1>
         </div>
-        <button type="button" className="icon-btn" aria-label={s.shared ? `Session code ${s.shared.code}, invite players` : 'Invite players'} onClick={() => nav.openSheet('invite')}>
+        <button type="button" className="icon-btn" style={{ marginBottom: -7 }} aria-label={s.shared ? `Session code ${s.shared.code}, invite players` : 'Invite players'} onClick={() => nav.openSheet('invite')}>
           {s.shared ? <span className="num" style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>{s.shared.code}</span> : <Icon.invite />}
         </button>
-        <button type="button" className="icon-btn" aria-label="Menu" onClick={() => nav.openSheet('menu')}><Icon.more /></button>
+        <button type="button" className="icon-btn" style={{ marginBottom: -7, marginLeft: -6 }} aria-label="Menu" onClick={() => nav.openSheet('menu')}><Icon.menu /></button>
       </header>
       {!store.storageOk && <div className="banner" role="status">This session won’t be saved if you close the page.</div>}
       {s.shared && store.status !== 'open' && <div className="banner" role="status">{store.status === 'missing' ? 'This shared session can’t be found anymore.' : 'Offline, reconnecting…'}</div>}
@@ -88,7 +88,7 @@ export function Table() {
           {st.rules.kongsPaidOnSpot && <button type="button" className="btn btn-primary" style={{ minHeight: 46, fontSize: 15 }} onClick={() => nav.openSheet('kong')}>Record kong</button>}
           <button type="button" className="btn btn-primary" style={{ minHeight: 46, fontSize: 15 }} onClick={() => nav.openSheet('draw')}>No winner (draw)</button>
         </div>
-        <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>
+        {!store.watching && <button type="button" className="btn" style={{ minHeight: 46, fontSize: 15, fontWeight: 500 }} onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>}
       </div>
       <TabBar current="table" locked={lockedBy !== null} />
     </div>
@@ -131,6 +131,17 @@ export function SeatCard({ seat }: { seat: number }) {
         ).map(([a, b]) => (
           <div key={a} className="list-row" style={{ minHeight: 44 }}><span style={{ flexGrow: 1, fontSize: 15 }}>{a}</span><strong>{b}</strong></div>
         ))}
+      </section>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
+        <h2 style={{ fontSize: 16, margin: 0 }}>Reading the character tiles</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+            <span key={n} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <Tile t={`m${n}`} size={0.52} />
+              <span className="num" style={{ fontSize: 14, fontWeight: 700 }}>{n}</span>
+            </span>
+          ))}
+        </div>
       </section>
     </div>
   );

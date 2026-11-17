@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { money, rulesSummary } from '../engine/rules';
+import { money } from '../engine/rules';
 import { KongKind } from '../engine/payout';
 import { Icon, PlayerChips, PLAYER_COLORS, Sheet } from '../components/ui';
+import { replay } from '../engine/session';
 import { useNav, useStore } from '../state/store';
 import { SeatCard } from './Table';
 import { InviteSheet } from './Sharing';
@@ -9,6 +10,7 @@ import { InviteSheet } from './Sharing';
 export function Sheets() {
   const nav = useNav();
   const store = useStore();
+  if (nav.sheet === 'feedback') return <FeedbackSheet />;
   if (!nav.sheet || !store.current) return null;
   if (nav.sheet === 'menu') return <MenuSheet />;
   if (nav.sheet === 'kong') return <KongSheet />;
@@ -22,28 +24,53 @@ export function Sheets() {
 function MenuSheet() {
   const nav = useNav();
   const store = useStore();
-  const items: [string, string, () => void][] = [
-    ['Home', 'Your session is saved; pick it up anytime', () => nav.reset('home')],
-    ['Standings & game history', 'Rankings and every game so far', () => nav.go('standings')],
-    ['Rules & payout', rulesSummary(store.table!.rules).replace('Hong Kong style · ', '') + (store.canEdit ? '' : ' · view only'), () => nav.go('rulesEdit')],
-    ['Players & seats', store.canEdit ? 'Fix a name, the dealer or the table wind' : 'View only on this phone', () => nav.go('playersEdit')],
-    ...(store.current!.shared ? [] : [['Invite players', 'Everyone follows on their own phone', () => nav.openSheet('invite')] as [string, string, () => void]]),
-    ['About Mahjong Magic', 'Who made this and how to give feedback', () => nav.go('about')],
+  const items: [string, () => void][] = [
+    ['Home', () => nav.reset('home')],
+    ['Standings & history', () => nav.go('standings')],
+    ['Rules & payout', () => nav.go('rulesEdit')],
+    ['Players & seats', () => nav.go('playersEdit')],
+    ...(store.current!.shared ? [] : [['Invite players', () => nav.openSheet('invite')] as [string, () => void]]),
+    ['Send feedback', () => nav.openSheet('feedback')],
+    ['About', () => nav.go('about')],
   ];
   return (
     <Sheet title={store.current!.name}>
       <nav style={{ display: 'flex', flexDirection: 'column', marginTop: -10 }}>
-        {items.map(([label, sub, fn]) => (
-          <button key={label} type="button" className="list-row" onClick={fn} style={{ border: 'none', borderBottom: '1px solid var(--divider)', background: 'none', textAlign: 'left' }}>
-            <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
-              <span style={{ fontSize: 16, fontWeight: 600 }}>{label}</span>
-              <span className="muted" style={{ fontSize: 13 }}>{sub}</span>
-            </span>
+        {items.map(([label, fn]) => (
+          <button key={label} type="button" className="list-row" onClick={fn} style={{ minHeight: 54, border: 'none', borderBottom: '1px solid var(--divider)', background: 'none', textAlign: 'left' }}>
+            <span style={{ flexGrow: 1, fontSize: 17, fontWeight: 600 }}>{label}</span>
             <Icon.chevron />
           </button>
         ))}
       </nav>
-      <button type="button" className="btn" onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>
+      {!store.watching && <button type="button" className="btn" onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>}
+    </Sheet>
+  );
+}
+
+const FEEDBACK_TO = 'eileen.jiang@kellogg.northwestern.edu';
+const TOPICS = ['Got lost', 'Score looked wrong', 'Photo misread', 'Something else'];
+
+/** Opened from the menu and from About. Each topic opens an email with the details filled in. */
+function FeedbackSheet() {
+  const store = useStore();
+  const s = store.current && !store.current.finished ? store.current : null;
+  const mail = (topic: string) => {
+    const lines = ['What happened?', '', '', '', '—', `Topic: ${topic}`, `App version: ${__BUILD_ID__}`];
+    if (s) lines.push(`Session: ${s.name} · game ${replay(s).gameNumber} · ${s.shared ? 'shared' : 'one phone'}`);
+    return `mailto:${FEEDBACK_TO}?subject=${encodeURIComponent(`Mahjong Magic · ${topic}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
+  };
+  return (
+    <Sheet title="Send feedback">
+      <nav aria-label="What’s it about?" style={{ display: 'flex', flexDirection: 'column', marginTop: -10 }}>
+        <p className="muted" style={{ margin: '0 0 6px', fontSize: 15 }}>What’s it about?</p>
+        {TOPICS.map((t) => (
+          <a key={t} className="list-row" href={mail(t)} style={{ minHeight: 54, borderBottom: '1px solid var(--divider)', textDecoration: 'none', color: 'var(--ink)' }}>
+            <span style={{ flexGrow: 1, fontSize: 17, fontWeight: 600 }}>{t}</span>
+            <Icon.chevron />
+          </a>
+        ))}
+      </nav>
     </Sheet>
   );
 }
@@ -110,10 +137,11 @@ function DrawSheet() {
 
 function EndConfirm() {
   const nav = useNav();
+  const store = useStore();
   return (
     <Sheet title="End the session?">
       <p style={{ margin: '-6px 0 4px', fontSize: 15, lineHeight: 1.45 }}>You’ll see final standings and who pays whom. You can keep playing until you tap Finish.</p>
-      <button type="button" className="btn btn-primary" onClick={() => nav.go('end')}>End &amp; settle up</button>
+      <button type="button" className="btn btn-primary" onClick={() => { store.setEnding(true); nav.go('end'); }}>End &amp; settle up</button>
       <button type="button" className="btn" onClick={nav.closeSheet}>Keep playing</button>
     </Sheet>
   );

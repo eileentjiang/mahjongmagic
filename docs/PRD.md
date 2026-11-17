@@ -1,9 +1,10 @@
-# Mahjong Magic: Product Requirements Document (v0.12 draft)
+# Mahjong Magic: Product Requirements Document (v0.13)
 
 > Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
 > Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
 > **Changelog**
+> - v0.13: **Success metrics defined** (section 9): a north star (photo scores right the first time), supporting metrics and guardrails, shown in the app on a **Metrics** screen (About → Metrics, replacing Photo accuracy). **Feedback without clutter:** an optional two-question check-in after Finish session on every phone, and **Send feedback** in the menu and on About. **Shared sessions end together:** when anyone taps End & settle up, every phone shows final standings until its own player taps Finish. The ⋯ menu becomes a ☰ menu, and the Table tab is renamed **This game**.
 > - v0.12: **Custom rules are written in plain language** and turned into a scoring rule once, at save; from then on the engine applies them automatically whenever they're on. **Mid-session rule and scale changes apply from the next game on only**; recalculating the whole session moves to the parking lot.
 > - v0.11: Scope trimmed after the flow review. **Editing, deleting or undoing past games, one-off payments, switching seats mid-session, and the win-context ticks (last tile, robbed a kong) move to the parking lot.** Added to the MVP: a quick confirm for a draw, a hand-entry tile picker, mid-session Rules and Players (changes apply from the next game on), an "End session?" confirm, and the "save as a table profile" offer at the end of a session.
 > - v0.10: **Shared session is MVP (Feature F).** Everyone can join the same live session from their own phone with a 4-letter code or QR; each phone claims a seat, scoring defaults to "you" as the winner, and every confirmed game updates every phone. A single scorekeeper on one phone stays fully supported, and can invite others at any time without restarting anything. Navigation during a session is a 3-tab bar (Table · Score a win · Standings), where Score opens the camera directly. Needs a small live-sync service, so the "no sync / localStorage only" rule is replaced.
@@ -140,7 +141,7 @@ Presets marked ★ are **on in the House default default profile**.
 4. The system shows the **total points**, a **line-by-line breakdown of each scoring pattern** with a plain-language reason, and **what each player pays or receives**.
 5. **Confirm** sends the game to the ledger (Feature B). **Cancel** changes nothing.
 - **Fallback:** if the photo fails or the user has no camera, they **build the hand by tapping tiles** on a hand-entry screen: the hand so far on top (tap a tile to remove it, with a "9 of 14 tiles" count), and tiles to add below, grouped as Dots, Bamboo, Characters, Honors and Flowers. The target is **14 tiles by default, plus one for each kong** (four of the same tile, so 15 with one kong, up to 18); flowers don't count. Scoring unlocks when the count matches, and adding a tile is never blocked, so a kong hand is never stuck at 14. Scoring never depends on the camera working.
-- **Accuracy tracking:** when a game scored from a photo is confirmed, the app sends the server what the photo reader said and the tiles the players confirmed (tile names only, never the photo). The server keeps running totals per model: tiles read correctly, photos needing no fixes, confident misreads, how often a ? was really wrong, and the most common mix-ups. The numbers show in the app under About → Photo accuracy, and are used to tune the instructions and choose the model.
+- **Accuracy tracking:** when a game scored from a photo is confirmed, the app sends the server what the photo reader said and the tiles the players confirmed (tile names only, never the photo). The server keeps running totals per model: tiles read correctly, photos needing no fixes, confident misreads, how often a ? was really wrong, and the most common mix-ups. The numbers show in the app under About → Metrics, and are used to tune the instructions and choose the model.
 - **[OPEN]** Recognition approach (see §7). It almost certainly needs a vision model behind a small server function, which changes the "no backend" assumption.
 
 ### Feature D: Seat and table assignments
@@ -155,9 +156,9 @@ Presets marked ★ are **on in the House default default profile**.
 **[User changes players, house rules, seating, or the score being entered]** → **[System accepts the change and recalculates everything that depends on it.]**
 - *Editing, deleting or undoing a game that's already confirmed is **not in the MVP** (parking lot). Before Confirm, everything on the score screen can still be changed.*
 - **Change the payout scale or house rules mid-session:** the change applies **from the next game on**. Games already played keep the scale and rules they were scored with. *(Recalculating the whole session with new rules is in the parking lot.)*
-- **Fix names or seat order:** from ⋯ → Players & seats, mid-session. *(Substituting a new player into a seat is **Phase 2**; see the parking lot.)*
+- **Fix names or seat order:** from ☰ → Players & seats, mid-session. *(Substituting a new player into a seat is **Phase 2**; see the parking lot.)*
 - **Mid-session Rules and Players** are the same screens as setup, without the setup steps; **Save changes** returns to the Table. Phones that joined a shared session see them read-only.
-- **Change seating / dealer:** override the dealer, the table wind, or the seat order if the app's tracking drifts from the real table (⋯ → Players & seats, under "Dealer & table wind").
+- **Change seating / dealer:** override the dealer, the table wind, or the seat order if the app's tracking drifts from the real table (☰ → Players & seats, under "Dealer & table wind").
 - **Override a score:** accept a hand below the minimum, or adjust the points for a house rule the variant doesn't cover, with a visible "manually adjusted" tag.
 
 ### Feature F: Shared session (everyone's phone) or a single scorekeeper
@@ -178,8 +179,9 @@ Presets marked ★ are **on in the House default default profile**.
 - **One scorer at a time.** While someone is scoring, other phones show "Chloe is scoring game 6…" and their Score button is paused, so a game can't be entered twice.
 - **Anyone can view** standings, history and their own "My seat" card at any time.
 - No accounts: a phone is remembered for that session only.
+- **Ending together.** When anyone taps **End session & settle up**, every phone moves to **Final standings**. Each phone stays there until its own player taps **Finish session**, so Amy keeps her standings even after Ben finishes. Backing out of Final standings means "keep playing" for that phone. Once anyone finishes, the session can't be continued another day. **Watchers stay passive:** they can't end the session, and on Final standings they only see the results and a **Done** button that takes them home, with no check-in and nothing counted.
 
-**Navigation during a session:** a bottom tab bar with three items: **Table**, **Score a win** (the large center button, which opens the camera directly, so a fluent player is one tap from snapping the hand), and **Standings**. Everything else (Home, Rules, Players, About, End session) lives in the **⋯ menu** on the Table screen.
+**Navigation during a session:** a bottom tab bar with three items: **This game**, **Score a win** (the large center button, which opens the camera directly, so a fluent player is one tap from snapping the hand), and **Standings**. Everything else (Home, Standings & history, Rules, Players, Send feedback, About, End session) lives in the **☰ menu** at the top right of the This game screen. The menu shows headlines only.
 
 **Cross-cutting:** every confirmed action is saved immediately: on the device, and to the shared session when one exists. A refresh, a closed tab, a locked phone or a dropped connection never loses the session; a phone that rejoins catches up automatically.
 
@@ -234,7 +236,8 @@ Presets marked ★ are **on in the House default default profile**.
 1. Typically after a full wind round (4 rounds), or whenever the group decides, a user taps **"End session"** and confirms ("End the session? … You can still reopen it for 24 hours").
 2. The summary shows **final standings**, net $ per player, per-round breakdowns, and the minimal **"who pays whom"** list.
 3. User chooses **"Finish"** (archives the session as read-only) or **"Save & continue later"** (resumes with the same seats, balances, and table wind next time).
-4. **Only one session can be open at a time.** A saved ("continue later") session still counts as open: starting a new session, playing again with a saved table, or joining someone else's session first asks the player to continue it or end it and settle up. Saved tables under "Play again" are always available once nothing is open.
+4. **After Finish session, each phone asks two optional questions**: *How was scoring?* and *How was the session overall?*, each Smooth · Confusing · Frustrating, with **Send** or **No thanks**. Answers are anonymous counts.
+5. **Only one session can be open at a time.** A saved ("continue later") session still counts as open: starting a new session, playing again with a saved table, or joining someone else's session first asks the player to continue it or end it and settle up. Saved tables under "Play again" are always available once nothing is open.
 
 ---
 
@@ -434,11 +437,36 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 ---
 
 ## 9. Success metrics (for iteration)
-- Time from "Score a win" to "Confirm" is **under 30 seconds** for a typical hand (photo path).
-- **Every photo** reads all tiles correctly (100% target); any correction needed during test sessions gets logged and fixed. Fewer than 1 in 5 photos needs a retake.
-- **Zero rulebook lookups** for scoring during a test session.
-- Final settlement takes **under 1 minute** with no disputes.
-- The group chooses to use it again the following session.
+The app exists to be **convenient and intuitive**: it does the counting so nobody has to fight it. The MVP worries are **confusion** and **inaccurate scores**, so the metrics watch those. Usage is small (a few tables), so the numbers point a direction rather than prove anything; they're read alongside what players say.
+
+**North star: photo scores right the first time.** Of the games scored from a photo, how many were confirmed with **no tile fixes**. Shown as *X / Y* with the percentage small beside it, since the sample is small. No time window: how often people play varies.
+
+**Supporting metrics**
+- **Sessions settled:** sessions started vs. sessions that reach Finish session, and the rate.
+- **How games were scored:** games and tiles entered by photo vs. by hand (shows how much counting the camera actually does).
+- **Check-in after finish:** Smooth / Confusing / Frustrating counts for *scoring* and for *the session overall*, plus how many skipped.
+- **Photo accuracy by model:** tiles read correctly, photos with no fixes, misses and extras, flowers wrong, and the most common mix-ups.
+
+**Guardrails**
+- **Cost per photo** (exact, from token usage; about 0.7–0.9¢ with Opus 5.5 at low effort).
+- **Wrong but marked sure:** tiles the reader got wrong without flagging them. These are the costly ones, because nobody double-checks them.
+
+**Left out on purpose (for now):** retention and frequency (the user base is too small), NPS/CSAT (replaced by the one-question check-in), page-load and navigation-confusion tracking.
+
+**How it's collected:** anonymous counts on the Worker (no names, no photos, no device ids): session started, session settled, game scored by hand (with its tile count), and check-in answers. Photo games come from the existing accuracy reports. Everything shows on **About → Metrics**.
+
+**Feedback without clutter:** no prompts during play. The only unprompted ask is the check-in after Finish session. **Send feedback** sits in the ☰ menu and on About ("Feedback? Contact me"); both open the same sheet (*Got lost · Score looked wrong · Photo misread · Something else*), and the choice opens an email with the topic, app version and (in a session) the session name, game number and whether it's shared already filled in.
+
+**Photo models tried** (as of Nov 2026)
+| Model | Result |
+|---|---|
+| Sonnet 5.5, low effort | Judged inaccurate in testing; not measured |
+| Kimi K2.6 (Workers AI) | Confidently wrong; not measured |
+| Gemini 2.5 Flash | **No data.** Its two test photos were silently answered by the backup model (Llama), which is why the silent fallback was removed |
+| Llama 4 Scout (Workers AI) | 2 photos: 1 of 28 tiles right (4%); all 27 wrong tiles marked sure |
+| **Opus 5.5, low effort (in use)** | 4 photos (2 hands): 56 of 56 tiles right; about 0.9¢ per photo, 0.7¢ after the compact answer and crop |
+
+Earlier targets still stand: under 30 seconds from Score a win to Confirm, zero rulebook lookups, and settling up in under a minute with no disputes.
 
 ---
 

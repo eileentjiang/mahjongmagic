@@ -59,7 +59,7 @@ export function Standings() {
             </div>
           ))}
         </section>
-        <button type="button" className="btn" onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>
+        {!store.watching && <button type="button" className="btn" onClick={() => nav.openSheet('endConfirm')}>End session &amp; settle up</button>}
       </div>
       <TabBar current="standings" locked={!!store.current?.shared && !!store.room?.lock && store.room.lock.device !== deviceId()} />
     </div>

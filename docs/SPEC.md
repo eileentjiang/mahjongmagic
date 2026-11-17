@@ -45,3 +45,11 @@ src/
 5. **Payout**: House default → discarder 2H, others H; self-draw everyone 2H. Pure MCR → points + 8 rules.
 
 Stage 1 limits (honest): concealment is one switch for the whole hand ("any sets melded?"), and the winning tile is the last tile entered. Win-context fans (last tile, robbing the kong, replacement tile) aren't scored (parking lot). Combining principles beyond the exclusion table (account-once) are approximated.
+
+## Server (stages 2–3)
+The Worker (`worker/`) handles photos, custom rules, shared sessions and metrics.
+- `POST /recognize`, `POST /rule`: photo reading and custom rules.
+- `GET /session/ABCD/ws`: live connection to a shared session. Ops: `claim`, `append`, `meta`, `lock`, `unlock`, `finish`, and `end` (sets `session.ending`, which sends every phone to Final standings).
+- `POST /feedback`: what the photo reader said vs. the confirmed tiles (tile names only).
+- `POST /event`: anonymous usage counts (`session_started`, `session_settled`, `game_by_hand` with its tile count, `checkin`, `checkin_skipped`). No names, photos or device ids.
+- `GET /stats`: accuracy per model, cost per photo, usage counts and the model in use. Shown on About → Metrics.
