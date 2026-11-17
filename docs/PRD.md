@@ -321,7 +321,6 @@ The v1 variant is **WMO Mahjong Competition Rules (2014)**, labeled "Hong Kong s
 | Minimum / cap | **More than 0** (flower-only hands can win) / none | 8 (flowers excluded) / none | *Lower minimum*, *Point cap* |
 | Flowers | **1 pt** per seat-matching flower; full set **+2** | 1 pt each, any seat | *Own-seat flowers only*, *Full flower set bonus* |
 | Kongs | Paid on the spot: melded **2**, concealed/self-drawn **4**; not re-counted on a win | Counted as fan only if the owner wins | *Kong paid on the spot* |
-
 | Chicken Hand | 8 pts, only with **no flowers at all** and nothing else scoring | 8 pts if nothing else scores (flowers excluded) | n/a |
 | Seats / dealer bonus / false win | Seats stay put; no dealer bonus; no penalty | Seats swap each round; penalties apply | *False-win penalty* |
 
@@ -339,7 +338,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - **Tried and rejected:** Sonnet 5.5 at low effort, Kimi and Llama 4 Scout on Cloudflare Workers AI, and Gemini 2.5 Flash were cheaper or free but confidently wrong (see section 9). Gemini and Workers AI can still be switched on with one setting, with no silent fallback between them.
 - **Cost:** recorded exactly for every photo from token usage, about 0.7–0.9¢ each. **Privacy:** photos are never stored; only tile names are kept for accuracy tracking. **Offline:** manual entry always works.
 
-### Tech stack (proposed, confirm in the spec phase)
+### Tech stack (as built)
 - A web app: **Vite + React + TypeScript**, plain CSS with design tokens, hand-drawn SVG icons.
 - **One Cloudflare Worker** holds the API keys and handles photo recognition, custom rules, live sync and metrics.
 - **Live sync for shared sessions** (Feature F) runs on a **Cloudflare Durable Object** next to the Worker, so there's one provider for everything. It stores only the session: seats, names, games, rules, balances. **Sessions don't expire for now** (a 60-day expiry was built, then shelved; see the parking lot).
@@ -488,5 +487,3 @@ Earlier targets still stand: under 30 seconds from Score a win to Confirm, zero 
 | **4. A winner: reveal hand & score** | Big loser and winner determined · self-draw → all pay · count the winner's score → payout amounts · exchange tokens · dice stays or moves on · everyone gets a new flower # if the dice moves | Keep track of cumulative scores | **C** photo → points + reasons · **A** self-draw/discard split · **B** ledger replaces tokens · **D** auto-rotate flowers |
 | **5. Mix & set up next round** | Begin, play, conclude (repeat) | (n/a) | **B** standings after each game |
 | **6. Conclusion of all rounds** | Typically at the end of a wind round (4 rounds) · calculate final cumulative payout · pay & clean up | End a round or set future continuation · final $ payout & rankings | **B** end-session summary, minimal transfers, save & continue |
-
-*Note:* the edge of the last photo shows a partly cut-off orange note ("-list… F… mu… North…"). Add it here once it can be read in full.
