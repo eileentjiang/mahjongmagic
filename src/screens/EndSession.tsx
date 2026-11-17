@@ -1,6 +1,8 @@
 import { money } from '../engine/rules';
 import { settleUp } from '../engine/payout';
-import { Header, Icon, PLAYER_COLORS } from '../components/ui';
+import { useEffect, useRef, useState } from 'react';
+import { Answer, track } from '../api';
+import { Header, Icon, PLAYER_COLORS, Sheet } from '../components/ui';
 import { useNav, useStore } from '../state/store';
 
 export function EndSession() {
@@ -20,11 +22,18 @@ export function EndSession() {
       else { await navigator.clipboard.writeText(summary); alert('Summary copied.'); }
     } catch { /* canceled */ }
   };
+  const [asking, setAsking] = useState(false);
+  // Shared sessions: leaving this screen without finishing means "keep playing", so the other phones stop being sent here.
+  const storeRef = useRef(store);
+  storeRef.current = store;
+  const closing = useRef(false);
+  useEffect(() => () => { if (!closing.current) storeRef.current.setEnding(false); }, []);
+  const finish = () => { closing.current = true; store.finishSession(false); nav.reset('home'); };
   const sw = (i: number) => <span className="swatch" style={{ width: 14, height: 14, background: PLAYER_COLORS[i] }} />;
 
   return (
     <div className="app">
-      <Header title="Final standings" kicker={`${s.name} · ${st.gamesPlayed} game${st.gamesPlayed === 1 ? '' : 's'} · ${dur}`} />
+      <Header back={!s.finished} title="Final standings" kicker={`${s.name} · ${st.gamesPlayed} game${st.gamesPlayed === 1 ? '' : 's'} · ${dur}`} />
       <div className="body" style={{ gap: 18 }}>
         {st.balances[top] > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 18, background: PLAYER_COLORS[top], border: '1px solid var(--line)' }}>
@@ -65,9 +74,37 @@ export function EndSession() {
         <button type="button" className="link-btn" style={{ justifyContent: 'center' }} onClick={share}><Icon.share />Share summary</button>
       </div>
       <footer className="footer">
-        <button type="button" className="btn btn-primary" onClick={() => { store.finishSession(false); nav.reset('home'); }}>Finish session</button>
-        <button type="button" className="btn" onClick={() => { store.finishSession(true); nav.reset('home'); }}>Save &amp; continue another day</button>
+        <button type="button" className="btn btn-primary" onClick={() => setAsking(true)}>Finish session</button>
+        {!s.finished && <button type="button" className="btn" onClick={() => { store.finishSession(true); nav.reset('home'); }}>Save &amp; continue another day</button>}
       </footer>
+      {asking && <CheckIn onClose={() => setAsking(false)} onDone={finish} />}
     </div>
+  );
+}
+
+const ANSWERS: [Answer, string][] = [['smooth', 'Smooth'], ['confusing', 'Confusing'], ['frustrating', 'Frustrating']];
+
+/** Two optional questions after Finish session, asked on every phone. */
+function CheckIn({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [scoring, setScoring] = useState<Answer | null>(null);
+  const [overall, setOverall] = useState<Answer | null>(null);
+  const q = (label: string, value: Answer | null, set: (a: Answer | null) => void) => (
+    <div role="group" aria-label={label} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <span style={{ fontSize: 16, fontWeight: 600 }}>{label}</span>
+      <div className="seg" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+        {ANSWERS.map(([a, text]) => <button key={a} type="button" aria-pressed={value === a} onClick={() => set(value === a ? null : a)}>{text}</button>)}
+      </div>
+    </div>
+  );
+  const answered = scoring !== null || overall !== null;
+  return (
+    <Sheet title="Before you go" onClose={onClose}>
+      {q('How was scoring?', scoring, setScoring)}
+      {q('How was the session overall?', overall, setOverall)}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+        <button type="button" className="btn btn-primary" disabled={!answered} onClick={() => { void track({ type: 'checkin', scoring, overall }); onDone(); }}>Send</button>
+        <button type="button" className="link-btn" style={{ justifyContent: 'center', minHeight: 44 }} onClick={() => { void track({ type: 'checkin_skipped' }); onDone(); }}>No thanks</button>
+      </div>
+    </Sheet>
   );
 }

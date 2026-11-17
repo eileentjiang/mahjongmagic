@@ -31,6 +31,8 @@ export interface Session {
   rules: RuleSet;
   events: SessionEvent[];
   finished: boolean;
+  /** Shared sessions: someone tapped End & settle up, so every phone shows final standings. */
+  ending?: boolean;
   /** Set when this session is shared live; the server holds the authoritative copy. */
   shared?: { code: string };
 }

@@ -10,6 +10,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { apply, expireLock, newRoom, Op, RoomSession, RoomState } from './room';
 import { addTo, compare, emptyStats, Feedback, ModelStats } from './feedback';
 import { parseCompact } from './compact';
+import { count, emptyUsage, parseEvent, Usage } from './usage';
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -209,6 +210,12 @@ const BACKUP_PHOTO_MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct';
 /** An error the player sees, with the technical reason underneath so it can be reported. */
 class PhotoError extends Error { constructor(message: string, readonly detail: string) { super(message); } }
 
+/** The model that reads photos right now, named as it appears in the accuracy totals. */
+function photoModelInUse(env: Env): string {
+  const reader = env.PHOTO_READER ?? 'claude';
+  return reader === 'claude' ? PHOTO_CLAUDE_MODEL : reader === 'gemini' ? `gemini/${env.GEMINI_MODEL}` : env.PHOTO_MODEL;
+}
+
 /** Read a photo with the configured reader. No silent fallback: a wrong confident read is worse than an honest failure. */
 async function recognizePhoto(env: Env, image: string): Promise<Recognition & { model: string }> {
   const reader = env.PHOTO_READER ?? 'claude';
@@ -350,9 +357,16 @@ export class PhotoStats extends DurableObject<Env> {
     const url = new URL(request.url);
     const byModel = (await this.ctx.storage.get<Record<string, ModelStats>>('byModel')) ?? {};
     const costs = (await this.ctx.storage.get<Record<string, PhotoCost>>('costs')) ?? {};
+    const usage = (await this.ctx.storage.get<Usage>('usage')) ?? emptyUsage();
     if (url.pathname === '/get') {
       const recent = (await this.ctx.storage.get<unknown[]>('recent')) ?? [];
-      return Response.json({ byModel, costs, recent: recent.slice(-50) });
+      return Response.json({ byModel, costs, usage, recent: recent.slice(-50) });
+    }
+    if (url.pathname === '/event') {
+      const e = parseEvent(await request.json().catch(() => null));
+      if (!e) return Response.json({ error: 'Bad event' }, { status: 400 });
+      await this.ctx.storage.put('usage', count(usage, e));
+      return Response.json({ ok: true });
     }
     if (url.pathname === '/cost') {
       const c = (await request.json()) as { model: string; input: number; output: number; usd: number };
@@ -459,9 +473,13 @@ export default {
       const res = await stats.fetch('https://stats/add', { method: 'POST', body: await request.text() });
       return json(await res.json(), res.status, origin);
     }
+    if (path === '/event' && request.method === 'POST') {
+      const res = await stats.fetch('https://stats/event', { method: 'POST', body: await request.text() });
+      return json(await res.json(), res.status, origin);
+    }
     if (path === '/stats' && request.method === 'GET') {
       const res = await stats.fetch('https://stats/get');
-      return json(await res.json(), 200, origin);
+      return json({ ...(await res.json() as object), inUse: photoModelInUse(env) }, 200, origin);
     }
 
     if (request.method !== 'POST') return json({ error: 'Use POST' }, 405, origin);

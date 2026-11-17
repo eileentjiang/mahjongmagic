@@ -13,9 +13,9 @@ import { About } from './screens/About';
 import { Camera } from './screens/Camera';
 import { Unsure } from './screens/Unsure';
 import { Claim, Join } from './screens/Sharing';
-import { Accuracy } from './screens/Accuracy';
+import { Metrics } from './screens/Metrics';
 import { UpdateBanner } from './components/UpdateBanner';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { deviceId } from './state/sync';
 
 function Screen() {
@@ -23,11 +23,21 @@ function Screen() {
   const store = useStore();
   const inSession = !!store.current && !store.current.finished;
   // Session screens need a session; setup screens need a setup.
-  const needsSession = ['table', 'camera', 'unsure', 'entry', 'score', 'standings', 'end', 'rulesEdit', 'playersEdit'].includes(nav.route);
+  const needsSession = ['table', 'camera', 'unsure', 'entry', 'score', 'standings', 'rulesEdit', 'playersEdit'].includes(nav.route);
   const needsSetup = ['rules', 'players'].includes(nav.route);
   const broken = (needsSession && !inSession) || (needsSetup && !store.setup) || ((nav.route === 'score' || nav.route === 'unsure') && !store.draft)
-    || (nav.route === 'claim' && !store.room);
+    || (nav.route === 'claim' && !store.room) || (nav.route === 'end' && !store.current);
   useEffect(() => { if (broken) nav.reset(inSession ? 'table' : 'home'); }, [broken]); // eslint-disable-line
+  // Shared sessions: when anyone taps End & settle up (or finishes), every phone moves to final standings
+  // and stays there until its own player taps Finish.
+  const ending = !!store.current?.shared && (!!store.current.ending || store.current.finished);
+  const wasEnding = useRef(ending);
+  useEffect(() => {
+    if (ending && !wasEnding.current && nav.route !== 'end') {
+      if (store.current!.finished) nav.reset('end'); else { nav.reset('table'); nav.go('end'); }
+    }
+    wasEnding.current = ending;
+  }, [ending]); // eslint-disable-line
   useEffect(() => {
     if (nav.route === 'entry' && !store.draft) store.update((d) => ({ ...d, draft: newDraft(store.mySeat ?? -1) }));
   }, [nav.route]); // eslint-disable-line
@@ -57,7 +67,7 @@ function Screen() {
     case 'about': return <About />;
     case 'join': return <Join />;
     case 'claim': return <Claim />;
-    case 'accuracy': return <Accuracy />;
+    case 'metrics': return <Metrics />;
   }
 }
 
@@ -82,7 +92,7 @@ function Shell() {
     history.replaceState(null, '', location.pathname);
     store.join(initialJoin);
   }, []); // eslint-disable-line
-  const start = initialJoin ? 'join' : store.current && !store.current.finished ? 'table' : 'home';
+  const start = initialJoin ? 'join' : store.current ? (store.current.finished ? 'end' : 'table') : 'home';
   return (
     <NavProvider initial={start}>
       <GrainDefs />

@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoom, deviceId, Op, RoomConnection, RoomState, Status } from './sync';
-import { sendFeedback } from '../api';
+import { sendFeedback, track } from '../api';
 import { HOUSE_DEFAULT, RuleSet } from '../engine/rules';
 import { newId, replay, Session, SessionEvent, TableState } from '../engine/session';
 import { TileId } from '../engine/tiles';
@@ -67,6 +67,8 @@ export interface Store extends Persisted {
   changeRules: (rules: RuleSet) => Promise<boolean>;
   saveSeating: (p: { name: string; players: string[]; dealer: number; tableWind: number }) => Promise<boolean>;
   finishSession: (keep: boolean) => void;
+  /** Shared sessions: tell every phone to show (or stop showing) final standings. */
+  setEnding: (ending: boolean) => void;
   saveProfile: (s: Session) => void;
   // ---- Shared sessions
   room: RoomState | null;
@@ -155,6 +157,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         rules: d.setup.rules, events: [], finished: false,
       };
       const profiles = d.setup.saveProfile ? upsertProfile(d.profiles, s) : d.profiles;
+      void track({ type: 'session_started' });
       return { ...d, sessions: [s, ...d.sessions], currentId: s.id, lastRules: d.setup.rules, setup: null, draft: null, profiles };
     }),
     addEvent: (e) => { void commit(e); },
@@ -173,6 +176,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
       if (ok) {
         if (dr.photo) void sendFeedback({ model: dr.photo.model, read: dr.photo.read, final: dr.tiles, flowersRead: dr.photo.flowers, flowersFinal: dr.flowers });
+        else void track({ type: 'game_by_hand', tiles: dr.tiles.length });
         setData((d) => ({ ...d, draft: null }));
       }
       return ok;
@@ -189,7 +193,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return moved ? commit({ type: 'override', at: Date.now(), dealer, tableWind }) : true;
     },
     finishSession: (keep) => {
-      if (shared && !keep) void send({ op: 'finish', finished: true });
+      // Someone else may already have finished this shared session: then only this phone closes it.
+      const already = !!current?.finished;
+      if (!keep && !already) {
+        if (shared) void send({ op: 'finish', finished: true });
+        void track({ type: 'session_settled' });
+      }
       setData((d) => ({
         ...d,
         currentId: keep ? d.currentId : null,
@@ -197,6 +206,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         sessions: d.sessions.map((s) => (s.id === d.currentId ? { ...s, finished: !keep } : s)),
       }));
     },
+    setEnding: (ending) => { if (shared && current && !current.finished && !!current.ending !== ending) void send({ op: 'end', ending }); },
     saveProfile: (s) => setData((d) => ({ ...d, profiles: upsertProfile(d.profiles, s) })),
     room: shared || joinCode ? room : null,
     status: shared || joinCode ? status : null,
@@ -249,9 +259,9 @@ export function useStore(): Store {
 
 // ---------- Navigation: a stack mirrored into browser history, so ← and the phone's back gesture agree.
 export type Route =
-  | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about' | 'join' | 'claim' | 'accuracy'
+  | 'home' | 'rules' | 'players' | 'table' | 'camera' | 'unsure' | 'entry' | 'score' | 'standings' | 'end' | 'about' | 'join' | 'claim' | 'metrics'
   | 'rulesEdit' | 'playersEdit';
-export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | 'rulesFine' | 'invite' | null;
+export type SheetName = 'menu' | 'kong' | 'draw' | 'seat' | 'endConfirm' | 'rulesFine' | 'invite' | 'feedback' | null;
 
 interface NavState { stack: Route[]; sheet: SheetName; sheetArg: number }
 interface Nav extends NavState {

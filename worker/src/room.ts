@@ -10,6 +10,8 @@ export interface RoomSession {
   rules: unknown;
   events: RoomEvent[];
   finished: boolean;
+  /** Someone tapped End & settle up: every phone shows final standings. */
+  ending?: boolean;
   createdAt: number;
 }
 
@@ -31,7 +33,8 @@ export type Op =
   | { op: 'meta'; name?: string; players?: string[] }
   | { op: 'lock' }
   | { op: 'unlock' }
-  | { op: 'finish'; finished: boolean };
+  | { op: 'finish'; finished: boolean }
+  | { op: 'end'; ending: boolean };
 
 export const LOCK_MS = 5 * 60 * 1000;
 export const gamesPlayed = (s: RoomSession) => s.events.filter((e) => e.type === 'game' || e.type === 'draw').length;
@@ -87,6 +90,9 @@ export function apply(s: RoomState, device: string, o: Op, now: number): Result 
       const players = o.players && o.players.length === 4 ? o.players.map((p, i) => String(p).slice(0, 40) || s.session.players[i]) : s.session.players;
       return bump({ session: { ...s.session, name: o.name ? String(o.name).slice(0, 60) : s.session.name, players } });
     }
+    case 'end':
+      if (s.session.finished) return { ok: false, error: 'This session has ended.' };
+      return bump({ session: { ...s.session, ending: !!o.ending } });
     case 'finish':
       return bump({ session: { ...s.session, finished: o.finished }, lock: null });
   }

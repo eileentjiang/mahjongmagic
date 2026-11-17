@@ -134,7 +134,9 @@ Companion to [`PRD.md`](PRD.md) (what we build) and [`SPEC.md`](SPEC.md) (how it
 
 - **Phone first, portrait.** Content max width 480px, centered on larger screens. 20px side gutter (24px on About).
 - **Structure per screen:** header (← back + title, optional kicker like "Step 1 of 2") → scrolling body → sticky footer holding the single primary action.
-- **During a session:** a bottom tab bar with Table · **Score a win** (the raised walnut camera button) · Standings. Everything else lives in the ⋯ menu.
+- **During a session:** a bottom tab bar with This game · **Score a win** (the raised walnut camera button) · Standings. Everything else lives in the ☰ menu at the top right of This game, which lists headlines only (no description lines).
+- **Optional questions** (the check-in after Finish session) use the segmented choice buttons; tapping a picked answer clears it.
+- **Metrics** (About → Metrics): the north star sits in a walnut block with the count large and the percentage small; other groups are panels; charts are plain ink bars on linen tracks, labeled once.
 - **Back always returns to the previous screen** (browser history), never a fixed screen.
 - **Tap targets ≥ 44px**, no horizontal scroll at 360px. Respect the safe areas (`env(safe-area-inset-*)`).
 - **Seat grid** on the Table follows the real table: East and South on top, North and West below.

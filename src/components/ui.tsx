@@ -7,7 +7,7 @@ const svg = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke:
 export const Icon = {
   back: () => <svg {...svg}><path d="M15 6l-6 6 6 6" /></svg>,
   close: () => <svg {...svg}><path d="M6 6l12 12M18 6L6 18" /></svg>,
-  more: () => <svg {...svg} strokeWidth={2.4}><path d="M12 5h.01M12 12h.01M12 19h.01" /></svg>,
+  menu: () => <svg {...svg} width={24} height={24}><path d="M4 6.5h16M4 12h16M4 17.5h16" /></svg>,
   chevron: () => <svg {...svg} width={18} height={18} stroke="#4A4E4B"><path d="M9 6l6 6-6 6" /></svg>,
   plus: () => <svg {...svg} width={20} height={20}><path d="M12 5v14M5 12h14" /></svg>,
   grid: () => <svg {...svg}><rect x="3" y="3" width="8" height="8" /><rect x="13" y="3" width="8" height="8" /><rect x="3" y="13" width="8" height="8" /><rect x="13" y="13" width="8" height="8" /></svg>,
@@ -76,7 +76,7 @@ export function TabBar({ current, locked = false }: { current: Route; locked?: b
   const go = (r: Route) => { if (current !== r) (current === 'table' ? nav.go(r) : r === 'table' ? nav.back() : nav.go(r)); };
   return (
     <nav className="tabbar" aria-label="Session">
-      <button type="button" className="tab" aria-current={current === 'table' ? 'page' : undefined} onClick={() => go('table')}><Icon.grid />Table</button>
+      <button type="button" className="tab" aria-current={current === 'table' ? 'page' : undefined} onClick={() => go('table')}><Icon.grid />This game</button>
       <button type="button" className="tab tab-score" disabled={locked} aria-disabled={locked} style={locked ? { opacity: 0.45 } : undefined} onClick={() => nav.go('camera')}>
         <span className="box"><Icon.camera /></span>Score a win
       </button>
