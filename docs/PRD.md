@@ -1,24 +1,19 @@
-# Mahjong Magic: Product Requirements Document (v0.13)
+# Mahjong Magic: Product Requirements Document (v1.0, MVP)
 
-> Status: **Draft, for discussion.** Nothing is built yet. Items marked **[OPEN]** need a decision before the build starts.
-> Companion docs: [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
+> Status: **MVP built and live** at [eileentjiang.github.io/mahjongmagic](https://eileentjiang.github.io/mahjongmagic/) (Nov 2026). This document describes what shipped and the decisions behind it.
+> Companion docs: [`DESIGN.md`](./DESIGN.md) (visual design), [`SPEC.md`](./SPEC.md) (how it's built), [`PARKING_LOT.md`](./PARKING_LOT.md) (future ideas), [`variants/MCR.md`](./variants/MCR.md) (full MCR rulebook reference), [`variants/GAME_NIGHT_DEFAULT.md`](./variants/GAME_NIGHT_DEFAULT.md) (the owner's default house profile), plus the research synthesis in the appendix below.
 >
-> **Changelog**
-> - v0.13: **Success metrics defined** (section 9): a north star (photo scores right the first time), supporting metrics and guardrails, shown in the app on a **Metrics** screen (About → Metrics, replacing Photo accuracy). **Feedback without clutter:** an optional two-question check-in after Finish session on every phone, and **Send feedback** in the menu and on About. **Shared sessions end together:** when anyone taps End & settle up, every phone shows final standings until its own player taps Finish. The ⋯ menu becomes a ☰ menu, and the Table tab is renamed **This game**.
-> - v0.12: **Custom rules are written in plain language** and turned into a scoring rule once, at save; from then on the engine applies them automatically whenever they're on. **Mid-session rule and scale changes apply from the next game on only**; recalculating the whole session moves to the parking lot.
-> - v0.11: Scope trimmed after the flow review. **Editing, deleting or undoing past games, one-off payments, switching seats mid-session, and the win-context ticks (last tile, robbed a kong) move to the parking lot.** Added to the MVP: a quick confirm for a draw, a hand-entry tile picker, mid-session Rules and Players (changes apply from the next game on), an "End session?" confirm, and the "save as a table profile" offer at the end of a session.
-> - v0.10: **Shared session is MVP (Feature F).** Everyone can join the same live session from their own phone with a 4-letter code or QR; each phone claims a seat, scoring defaults to "you" as the winner, and every confirmed game updates every phone. A single scorekeeper on one phone stays fully supported, and can invite others at any time without restarting anything. Navigation during a session is a 3-tab bar (Table · Score a win · Standings), where Score opens the camera directly. Needs a small live-sync service, so the "no sync / localStorage only" rule is replaced.
-> - v0.9: Terminology: a **game** is one deal (was "hand"), a **round** is a full lap of the dealer back to the first dealer (the table wind then advances), and a **session** is the whole sitting (was "night"; play doesn't have to be at night). The default house profile is renamed **House default** (was "Game Night"). "Hand" now only means the tiles a player holds.
-> - v0.8: The repo stays **public** (free GitHub Pages). **Player substitution and sit-out rotation move to Phase 2**, out of the MVP.
-> - v0.7.2: Confirmation is shown **only when recognition is unsure**; confident reads go straight to the score. The photo proxy is invisible to players: one link, one app.
-> - v0.7.1: Hosting on **GitHub Pages**, with the photo-recognition call going through a tiny separate proxy (Pages can't keep an API key secret). Accuracy target raised to **100%**, with the recognized tiles always shown for a quick confirm or fix.
-> - v0.7: Photo recognition must identify every tile's suit and number/symbol, and **blurry or low-light photos are rejected with a retake prompt** before scoring. When two players call the same discard, **the first to call wins**. Hosting: **a shareable web link**. Substitute balances remain TBD.
-> - v0.6: All House default rules settled. All three players pay each kong equally; Three/Four Kongs still score; Chicken Hand needs no flowers at all; no dealer bonus; seats stay put; no false-win penalty.
-> - v0.5: House default details settled: seat flower = 1 pt, full set = +2, flower-only hands can win, the dealer passes on a draw, and the Self-Drawn fan isn't counted. **Kongs are paid on the spot** (melded 2 pts, concealed/self-drawn 4 pts) and aren't counted again if the owner wins. Recording a kong is now a quick action during play.
-> - v0.4: The default scoring is now the owner's **"House default" house profile** on top of MCR: a minimum above 0 points, discarder pays 2× and the others 1×, self-draw doubles everyone's payment, the dealer keeps the deal on a win, only seat-matching flowers score, and a full flower set earns a bonus. The MCR reference now covers the whole rulebook (exclusions, fouls, rankings).
-> - v0.3: The default variant is now **"Hong Kong style (MCR rules)"**, based on the WMO *Mahjong Competition Rules* (2014). The default payout scale is **$0.10 per point**, editable. Added **house-rule presets** and **saved table profiles** to Feature A, so a group's usual rules take one tap.
-> - v0.2: MVP features rewritten around the owner's feature list (variant choice, cumulative rankings, photo scoring, seat/table info, manual adjustments). User flows, edge cases and DoD updated to match. Photo scoring and variant choice moved out of non-goals.
-> - v0.1: first draft.
+> **Key decisions**
+> - **Who it's for:** the Friendly Game Night player (same group, 3–4 hours, small stakes settled once at the end). Other personas wait for later.
+> - **Rules:** Hong Kong style scoring on the **MCR fan list**, with the owner's **House default** profile on top ($0.10 per point, discarder pays double, self-draw doubles, kongs paid on the spot). Every rule is a setting, never hard-coded.
+> - **Terminology:** a **game** is one deal, a **round** is a full lap of the dealer, a **session** is the whole sitting.
+> - **Shared sessions are MVP:** everyone can follow and score on their own phone with a 4-letter code or QR, or one phone keeps score for all. No accounts.
+> - **Photos:** confirmation only when the reader is unsure; blurry or dark photos are rejected. After testing cheaper models that were confidently wrong, photos are read by **Claude Opus 5.5 at low effort** (under 1¢ a photo after shortening the answer and cropping the photo). **No silent fallback** to another model.
+> - **Custom house rules** are written in plain language and turned into a checkable rule once, at save. Scoring never calls the AI.
+> - **Cut from the MVP** (parking lot): editing or undoing confirmed games, one-off payments, switching seats, player substitution (Phase 2), win-context ticks (last tile, robbed kong), and recalculating a session after a rule change. **Rule changes apply from the next game on.**
+> - **Hosting:** a public repo on GitHub Pages, plus one Cloudflare Worker for photos, custom rules, live sync and metrics. Shared sessions don't expire for now.
+> - **Only one open session at a time**, and a shared session **ends together** on every phone.
+> - **Success is measured** by a north star (photo scores right the first time) plus a few supporting metrics and guardrails, shown on About → Metrics (section 9).
 
 ---
 
@@ -81,7 +76,7 @@ Six features. Each one is written as *[user action] → [system reaction]*. (F w
 - The variant sets the scoring patterns, point values, minimum to win, dealer rules, flower rules, and the **payout split**:
   - **Default (House default):** with hand value **H = points × payout scale**: on a **discard**, the discarder ("big loser") pays **2H** and the other two pay **H** each. On a **self-draw**, **all three pay 2H**.
   - **Pure MCR (selectable):** self-draw → each pays points + 8. Discard → the discarder pays points + 8 and the others pay 8.
-- Other variants show in the picker as "coming soon". Each variant is a **rules config (data)**, so adding one doesn't need a new engine.
+- **On the Rules screen** the user picks a starting point: **Our house rules** (House default, the default) or **Official rules (MCR)**, sets the payout scale with − / +, and can open **Fine-tune house rules** to switch individual rules or add a custom one. Other variants are in the parking lot. Each variant is a **rules config (data)**, so adding one doesn't need a new engine.
 
 **A2. Payout scale**
 - **Default: $0.10 per point** (6 points = $0.60). Examples under House default rules: a 6-point hand off a discard → the discarder pays $1.20, the others $0.60 each, and the winner gets +$2.40. A 6-point self-draw → everyone pays $1.20, and the winner gets +$3.60.
@@ -111,7 +106,7 @@ Presets marked ★ are **on in the House default default profile**.
 
 - **Custom house rule**, for anything not in the list, written in **plain language** (e.g. "If the winning hand has a pung or kong of green dragons, add 2 points") plus **who pays** (*Everyone*: the points join the hand total and are paid with the normal split; *Discarder only*: only the discarder pays them, and on a self-draw everyone does). The description has to say exactly when the rule counts, so the app asks for specifics instead of a short name.
   - **Check how it scores:** when the rule is saved, the app turns the description into a structured rule the scoring engine can test against any hand (tiles and sets, pair, suits, honors, flowers, seat/table wind, self-draw or discard, dealer). It shows that reading back in plain words (*When … · Adds … · Pays …*) for the user to confirm or reword before saving.
-  - The translation happens **once, at save** (through the same AI proxy as photo recognition, so saving needs a connection). Scoring itself never calls the AI: the stored rule is applied by the engine like any built-in pattern, offline, and gives the same result every time.
+  - The translation happens **once, at save** (Claude Sonnet 5.5 at low effort, through the same Worker as photo recognition, so saving needs a connection). Scoring itself never calls the AI: the stored rule is applied by the engine like any built-in pattern, offline, and gives the same result every time.
   - If the description depends on something the app can't know from the hand and the game details (e.g. "if someone is wearing red"), it says so and the rule can't be saved until it's reworded.
   - Saved rules appear in the House rules list with their own on/off switch.
 - **Rules that are on are the rules that score.** The scoring engine reads the session's current rule set for every game, with no manual steps: each preset or custom rule that's switched on is checked against every winning hand and applied automatically when it matches. It appears in "Why it scores" like any other pattern: its name, a *House rule* label, the points, the user's own wording when expanded, and an X to take it off for that game (which tags the score "Edited"), and one that's off has no effect. Changing rules mid-session applies **from the next game on**, and every game stores the rule set it was scored with.
@@ -142,7 +137,10 @@ Presets marked ★ are **on in the House default default profile**.
 5. **Confirm** sends the game to the ledger (Feature B). **Cancel** changes nothing.
 - **Fallback:** if the photo fails or the user has no camera, they **build the hand by tapping tiles** on a hand-entry screen: the hand so far on top (tap a tile to remove it, with a "9 of 14 tiles" count), and tiles to add below, grouped as Dots, Bamboo, Characters, Honors and Flowers. The target is **14 tiles by default, plus one for each kong** (four of the same tile, so 15 with one kong, up to 18); flowers don't count. Scoring unlocks when the count matches, and adding a tile is never blocked, so a kong hand is never stuck at 14. Scoring never depends on the camera working.
 - **Accuracy tracking:** when a game scored from a photo is confirmed, the app sends the server what the photo reader said and the tiles the players confirmed (tile names only, never the photo). The server keeps running totals per model: tiles read correctly, photos needing no fixes, confident misreads, how often a ? was really wrong, and the most common mix-ups. The numbers show in the app under About → Metrics, and are used to tune the instructions and choose the model.
-- **[OPEN]** Recognition approach (see §7). It almost certainly needs a vision model behind a small server function, which changes the "no backend" assumption.
+- **Camera:** the app opens its own camera view with one framed area ("Consolidate tiles in the indicated area"), and only that crop is sent, at a fixed size, which keeps the cost per photo steady. A note under the frame reads "Each photo costs me $0.02 please be nice". Phones without a live camera fall back to the system camera.
+- **Unsure tiles** carry a **?** badge on the tile strip, and the one being asked about has a thick ring.
+- **Four of the same tile isn't automatically a kong:** it only counts as one when the player says so.
+- **Errors are honest:** if the reader fails, the app says so, offers Try again and Enter tiles by hand, and shows a small "Details" line with the technical reason so it can be reported.
 
 ### Feature D: Seat and table assignments
 **[User checks their seat]** → **[System shows each player's flower number, seat wind and the table (prevailing) wind, with the character, its English name, and a picture of the matching tile, so people who don't read Chinese can follow along and points are assigned clearly.]**
@@ -150,7 +148,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **Auto-advance:** when the deal moves ("the dice moves"), seat winds and flower numbers rotate and **everyone gets their new flower #**. When the dealer keeps the deal (only with the *dealer stays* house rule; MCR always passes it), nothing rotates. After four rotations, the table wind advances.
 - Flower # drives scoring under the default (House default) profile, where only seat-matching flowers count: East 1 = Spring/Plum, South 2 = Summer/Orchid, West 3 = Autumn/Chrysanthemum, North 4 = Winter/Bamboo. Under pure MCR every flower is 1 point, and the flower # is shown for reference only.
 - Feature C uses these values automatically, so seat-wind, round-wind, and own-flower points are always applied correctly.
-- **"My seat" view:** a player can tap their name to see a large, readable card with their wind, flower #, and the tiles that score for them.
+- **"My seat" view:** a player can tap their seat card to see a large, readable card with their wind, flower #, the tiles that score for them, and **"Reading the character tiles"**: the nine character tiles (一 to 九 over 萬) with 1–9 under each, for players who don't read Chinese.
 
 ### Feature E: Manual adjustments
 **[User changes players, house rules, seating, or the score being entered]** → **[System accepts the change and recalculates everything that depends on it.]**
@@ -193,13 +191,13 @@ Presets marked ★ are **on in the House default default profile**.
 - **No accounts or logins.** Phones join a session with a code; nothing is stored about a person beyond their name in that session. Sync exists only to share one session between the phones at that table.
 - **No third-party payment integrations** (Venmo, PayPal, etc.). The app shows who owes whom, and money moves outside the app.
 - **No live video or continuous scanning.** A single still photo per winning hand only.
-- **No full support for every variant in v1.** The picker and data model support many, but only the [OPEN] chosen preset(s) are fully implemented.
+- **No full support for every variant in v1.** The data model supports many, but only MCR with house rules is implemented.
 - **No multi-table, tournament, or lobby features** (finding tables, queuing, skill matching).
 - **No full multi-language UI.** English UI, with Chinese characters shown next to English for winds, flowers, and tiles.
 - **No 3-player or 5+ player games.** Exactly 4 players are seated at once.
 - **No player substitution or sit-out rotation mid-session** (Phase 2). The same 4 players play the whole session.
 - **No storing photos** after the game is scored (privacy, and storage limits).
-- **No ads and no analytics.**
+- **No ads and no third-party analytics.** The only tracking is anonymous counts for the Metrics screen (section 9): no names, photos or device ids.
 
 ---
 
@@ -207,14 +205,14 @@ Presets marked ★ are **on in the House default default profile**.
 
 ### 5.1 Onboarding: open link → choose type of play → players & positions
 - **First visit (no saved sessions or profiles):** Home shows a single illustrated tile (a persimmon on a tilted tile) with one line of copy, plus "Start a new session" and "Join a session". Returning players see their session in progress and saved profiles instead.
-- **Owner's mark:** Eileen's personal seal appears small beside the © line on Home and About, and as a sign-off on the About page.
-1. User opens the link and sees **"Start a new session"**, plus **"Play again with ‹profile›"** for each saved table profile, and **"Continue last session"** if a saved session exists.
-   - **Fast path:** tapping a table profile skips straight to a one-screen confirmation (rules summary + players), and one more tap starts the session.
-2. **Choose the type of play:** the variant picker (Feature A), with the last-used variant pre-selected. Default: *Hong Kong style (MCR rules)* with the *House default* house profile.
-3. **House rules & payout:** toggle the house-rule presets (each with a one-line explanation), add a custom rule if needed, and confirm the payout scale (default $0.10/point). A summary line shows what's in play, e.g. "House default · MCR fan · min > 0 · discarder ×2 · self-draw ×2 · dealer stays · $0.10/pt".
-4. **Who's at the table and where:** name the table (e.g. "Thursday crew"; optional, defaults to the date, and becomes the profile name if saved), enter 4 names and place them in seats (East/South/West/North). East is the first dealer. Seats can be dragged to match the real table, or randomized ("roll for seats").
-5. The table view appears: each player's seat wind, flower #, $0.00 balance, the dealer badge, and the table wind.
-6. At the end of a first session (or whenever the user chooses), the app offers to **save the setup as a table profile**.
+- **Owner's mark:** Eileen's personal seal sits beside the greeting on the About page.
+1. User opens the link and sees **"Start a new session"**, plus **"Play again with ‹profile›"** for each saved table profile, and **"Continue session"** if one is open.
+   - **Fast path:** tapping a saved table goes straight to Players & seats with the names, seats and rules already filled in; one more tap starts the session.
+2. **Rules & payout (step 1 of 2):** "Pick a starting point. You can also modify the ruleset later." Choose **Our house rules** (default) or **Official rules (MCR)**, set the payout scale (default $0.10/point), and optionally open **Fine-tune house rules** to toggle presets or add a custom rule. The last-used rules are pre-selected.
+3. **Who's at the table and where:** name the table (e.g. "Thursday crew"; optional, defaults to the date, and becomes the profile name if saved), enter 4 names and place them in seats (East/South/West/North). East is the first dealer. Seats can be dragged to match the real table, or randomized ("roll for seats").
+4. The table view appears: each player's seat wind, flower #, $0.00 balance, the dealer badge, and the table wind.
+5. At the end of a first session (or whenever the user chooses), the app offers to **save the setup as a table profile**. Saved tables appear under **Play again** on Home; **swipe left to delete** one.
+- **Updates:** when a new version is published, a banner at the top reads "A new version is ready. Tap to update."
 
 ### 5.2 During play: each player knows what's relevant to their seat
 - The table view is always one tap away and shows each player's **seat wind, flower #, and the table wind** (Feature D), in Chinese and English with tile pictures.
@@ -233,9 +231,9 @@ Presets marked ★ are **on in the House default default profile**.
 7. If there's no winner, **"Draw"** moves the deal according to the variant and moves no money.
 
 ### 5.4 Concluding: final payouts and standings, or continue later
-1. Typically after a full wind round (4 rounds), or whenever the group decides, a user taps **"End session"** and confirms ("End the session? … You can still reopen it for 24 hours").
-2. The summary shows **final standings**, net $ per player, per-round breakdowns, and the minimal **"who pays whom"** list.
-3. User chooses **"Finish"** (archives the session as read-only) or **"Save & continue later"** (resumes with the same seats, balances, and table wind next time).
+1. Typically after a full wind round (4 rounds), or whenever the group decides, a user taps **"End session & settle up"** (on This game, Standings or the ☰ menu) and confirms ("End the session? You'll see final standings and who pays whom. You can keep playing until you tap Finish.").
+2. **Final standings** show the big winner, net $ per player, and the minimal **"who pays whom"** list, plus **Share summary** and the offer to save the table. (Per-round totals are on Standings, which switches between the whole session and the current round.)
+3. User chooses **"Finish session"** (closes it) or **"Save & continue another day"** (resumes with the same seats, balances, and table wind next time). In a shared session, every phone ends together (Feature F).
 4. **After Finish session, each phone asks two optional questions**: *How was scoring?* and *How was the session overall?*, each Smooth · Confusing · Frustrating, with **Send** or **No thanks**. Answers are anonymous counts.
 5. **Only one session can be open at a time.** A saved ("continue later") session still counts as open: starting a new session, playing again with a saved table, or joining someone else's session first asks the player to continue it or end it and settle up. Saved tables under "Play again" are always available once nothing is open.
 
@@ -277,7 +275,7 @@ Presets marked ★ are **on in the House default default profile**.
 - **Manual entry is always one tap away:** every rejected-photo prompt offers both "Retake photo" and "Enter tiles by hand", from the first failure.
 - **Wrong number of tiles** (not 14 + kong extras + flowers) → the score is blocked until the tile strip is valid, and the message says what's missing or extra.
 - **Not a winning hand** under the chosen variant → the app explains why (e.g. "no pair found") and offers a manual override (Feature E).
-- **Recognition service errors or times out (e.g. 500, no network)** → the app falls back to manual tile entry immediately. It never blocks scoring. A retry button is offered.
+- **Recognition service errors or times out (e.g. 500, no network)** → the app says the photo couldn't be read, offers **Try again** and **Enter tiles by hand**, and shows a short Details line. It never switches to another model silently and never blocks scoring.
 - **Camera permission denied / no camera** → the manual tile entry opens automatically.
 
 ### Scoring and money
@@ -294,8 +292,8 @@ Presets marked ★ are **on in the House default default profile**.
 ### Screens and devices
 - Designed for a **phone in portrait** passed around the table. Tap targets are ≥ 44px, with no horizontal scroll at 360px wide.
 - On tablets and desktops, the same layout is centered with a max width. A tablet propped up as a "table display" is a nice bonus.
-- High-contrast text, and a dark mode that follows the system setting. Readable at arm's length.
-- **Accidental "End session":** a confirm dialog, and a finished session can be re-opened for 24h.
+- High-contrast text, readable at arm's length. Light theme only for now.
+- **Accidental "End session":** a confirm dialog, and backing out of Final standings keeps playing. Once someone taps Finish session it can't be reopened.
 
 ---
 
@@ -337,26 +335,25 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - **Accuracy target: 100%** of tiles identified correctly on photos that pass the quality gate.
 - **Least friction:** when recognition is confident about every tile, the app **goes straight to the score**. The recognized tiles are still shown alongside the score breakdown, so anyone can tap a tile to fix it before confirming the game.
 - **Only when unsure:** if any tile is uncertain, the app **flashes what it picked up**, highlights the uncertain tiles, and asks the user to confirm or change them before scoring.
-- **How (implementation, decided in the spec phase):**
-- **Option 1 (proposed):** send the photo to a **vision-capable AI model** through a **tiny proxy** (e.g. a free Cloudflare Worker), so the API key never sits in the browser or the public GitHub repo. It returns a tile list. **The app's own rules engine does the scoring**, not the AI, so points are deterministic and testable.
-- **Option 2:** an on-device tile-recognition model. No server and no per-photo cost, but much more work up front and less accurate.
-- Either way, the user always reviews the tiles before scoring, and manual entry is always available.
-- Cost, privacy (no photos stored), and offline behavior (falls back to manual entry) have to be stated in the spec.
+- **How (decided):** the cropped photo goes to **Claude Opus 5.5 at low effort** through a **Cloudflare Worker**, so the API key never sits in the browser or the public repo. The model answers in a compact form (e.g. `m4 p5?p3/p6`, with `?` marking an unsure tile and its other guesses), which keeps the answer short and cheap. **The app's own rules engine does the scoring**, not the AI, so points are deterministic and testable.
+- **Tried and rejected:** Sonnet 5.5 at low effort, Kimi and Llama 4 Scout on Cloudflare Workers AI, and Gemini 2.5 Flash were cheaper or free but confidently wrong (see section 9). Gemini and Workers AI can still be switched on with one setting, with no silent fallback between them.
+- **Cost:** recorded exactly for every photo from token usage, about 0.7–0.9¢ each. **Privacy:** photos are never stored; only tile names are kept for accuracy tracking. **Offline:** manual entry always works.
 
 ### Tech stack (proposed, confirm in the spec phase)
-- A web app: **Vite + React + TypeScript**, **Tailwind CSS**, **Lucide** icons.
-- **One tiny proxy** for photo recognition (e.g. a Cloudflare Worker, free tier) that holds the AI API key and forwards the photo.
-- **A small live-sync service for shared sessions** (Feature F). **[OPEN]** Options: Supabase Realtime or Firebase (hosted, free tier, fastest to build), or a Cloudflare Durable Object next to the photo proxy (one provider for everything). It stores only the session: seats, names, games, rules, balances. Sessions expire after a set time (e.g. 30 days).
+- A web app: **Vite + React + TypeScript**, plain CSS with design tokens, hand-drawn SVG icons.
+- **One Cloudflare Worker** holds the API keys and handles photo recognition, custom rules, live sync and metrics.
+- **Live sync for shared sessions** (Feature F) runs on a **Cloudflare Durable Object** next to the Worker, so there's one provider for everything. It stores only the session: seats, names, games, rules, balances. **Sessions don't expire for now** (a 60-day expiry was built, then shelved; see the parking lot).
 - Persistence goes through a single storage module: it writes to `localStorage` first (offline-safe) and syncs to the shared session when one exists.
 - **Scoring, pattern detection, payout, and seat-rotation logic live in pure functions** (`src/engine/`), separate from the UI, with unit tests (Vitest) for every pattern and payout rule.
 - **Hosting (decided): GitHub Pages**, a shareable web link (e.g. `<username>.github.io/mahjongmagic`). Players open it on their phones; no app-store install. It deploys automatically from the repo.
   - GitHub Pages only serves static files and can't hide a secret, so the photo-recognition API key lives in the separate proxy above. **The proxy is invisible to players:** they only ever use the one link, with no extra sites, accounts or sign-ins. The app calls the proxy behind the scenes. Setting it up is a one-time job for the owner/developer.
   - **Decided:** the repo stays **public**, so GitHub Pages is free. No secrets are ever committed; the API key lives only in the proxy.
-  - *Nothing is built or deployed yet.*
+  - Both deploy automatically on every merge to `main`: the app to GitHub Pages, the Worker to Cloudflare.
 
-### Design direction **[TBD]**
+### Design direction (decided, see [`DESIGN.md`](./DESIGN.md))
 - Mobile-first, calm, high-contrast, and readable at arm's length on a table.
-- One primary action per screen. Money uses color plus a +/− sign, never color alone.
+- Warm paper ground, ink text and a single walnut action color; each player has their own color (mint, apricot, butter, lavender) that only ever marks that player. Onest for English, Noto Serif TC for tile and wind characters. No italics.
+- One primary action per screen. Money uses a +/− sign, never color alone.
 - Tiles are shown as recognizable tile images, with the Chinese character and its English name side by side.
 
 ### Conventions
@@ -381,7 +378,7 @@ Variants and house rules are a **rules config (data)** plus test hands, never ha
 - [ ] While one phone is scoring, the others show who is scoring and can't start a second score for the same game.
 - [ ] "Score a win" pre-selects the phone's own player as the winner.
 - [ ] A phone that loses connection and comes back catches up to the current state without duplicating or losing games.
-- [ ] The tab bar shows Table, Score a win and Standings; Score a win opens the camera in one tap.
+- [ ] The tab bar shows This game, Score a win and Standings; Score a win opens the camera in one tap.
 
 **Persistence**
 - [ ] Refreshing the page keeps all players, seats, confirmed games, and balances (from localStorage).
